@@ -1,0 +1,219 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Using float attributes in Android - androitism.</title>
+  <meta name="author" content="Matthias Käppler">
+
+  
+  <meta name="description" content="Android&#8217;s powerful styling engine allows us to declare view attributes in XML that will become part of an app&#8217;s theme and accessible &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://mttkay.github.com/blog/2012/06/26/using-float-attributes-in-android/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="androitism." type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">androitism.</a></h1>
+  
+    <h2>Bits and bobs for the busy Android coder.</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:mttkay.github.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Using Float Attributes in Android</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-06-26T00:00:00+02:00" pubdate data-updated="true">Jun 26<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Android&#8217;s powerful styling engine allows us to declare view attributes in XML that will become part of an app&#8217;s theme and accessible through XML and Java code.</p>
+<p>So if you have a custom view on which you want to define custom attributes (or re-use attributes that Android already declares), you start off by dropping a file called attrs.xml in your res/ folder:</p>
+<p><script src="https://gist.github.com/2994973.js"></script></p>
+<p>The user of your custom widget can then use these attributes in their own layouts and style sheets:</p>
+<p><script src="https://gist.github.com/2994987.js"></script></p>
+<p>Since users may pass custom values to these attributes, naturally you need a way to read them back in your widget code. This is achieved by going though Android&#8217;s obtainStyledAttributes helper:</p>
+<p><script src="https://gist.github.com/2995057.js"></script></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Matthias Käppler</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-06-26T00:00:00+02:00" pubdate data-updated="true">Jun 26<span>th</span>, 2012</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://mttkay.github.com/blog/2012/06/26/using-float-attributes-in-android/" data-via="" data-counturl="http://mttkay.github.com/blog/2012/06/26/using-float-attributes-in-android/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/04/20/ignition-0-2-released/" title="Previous Post: ignition 0.2 released">&laquo; ignition 0.2 released</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/10/08/testing-whether-an-application-is-installed-on-the-sd-card/" title="Next Post: Testing whether an application is installed on the SD card">Testing whether an application is installed on the SD card &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/02/23/test-post/">test post</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/31/use-android-s-id-notation-with-care/">Use Android's @+id Notation With Care</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/31/update-them-remotes-/">Update Them Remotes!</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/21/unblock-us-manager-for-android-updated-with-region-switcher/">Unblock Us Manager for Android Updated With Region Switcher</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/14/unblock-us-manager-now-available-on-google-play/">Unblock-Us Manager Now Available On Google Play</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Matthias Käppler -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

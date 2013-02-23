@@ -9,7 +9,8 @@
   <meta name="author" content="Matthias Käppler">
 
   
-  <meta name="description" content=" Blog Archives Recent Posts ">
+  <meta name="description" content="Hello world
+">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,7 +66,437 @@
       <div class="blog-index">
   
   
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/02/23/test-post/">Test Post</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-02-23T20:01:00+01:00" pubdate data-updated="true">Feb 23<span>rd</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h1>Hello world</h1>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/01/31/use-android-s-id-notation-with-care/">Use Android&#8217;s @+id Notation With Care</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-01-31T00:00:00+01:00" pubdate data-updated="true">Jan 31<span>st</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Being sloppy when it comes to managing your application&#8217;s resource IDs can lead to subtle bugs that are difficult to find and debug. Imagine a scenario where foo_activity.xml holds the layout definition for FooActivity, and you define three different variants for different screen configurations:</p>
+<p style="padding-left: 30px;">res/layout/foo_activity.xml<br />res/layout-land/foo_activity.xml<br />res/layout-sw600dp/foo_activity.xml</p>
+<p>Now, with some certainty these three layouts will share the same views, with the same IDs, just slightly differently styled or arranged. Let&#8217;s furthermore assume in all three layouts, we have a TextView:</p>
+<p><script src="https://gist.github.com/4682037.js"></script></p>
+<p>FooActivity will of course retrieve a reference to this TextView via findViewById:</p>
+<p><script src="https://gist.github.com/4682053.js"></script></p>
+<p>Now what happens if in the main layout file (layout/foo_activity) you change the view&#8217;s ID? You may be surprised to hear that your application will still compile. That&#8217;s because the old view ID, my_text, still exists in R.java, since while now gone from layout/foo_activity.xml, it&#8217;s still (re)created using the @+id notation in the other two layouts, thus continuing to exist in the ID pool. Whenever these layouts are loaded and you reference the new ID from FooActivity, then of course your application will crash.</p>
+<p>The problem here stems from violating the DRY principle: we&#8217;re carelessly repeating the code which creates a resource ID, when ideally, it should only ever be found in one, and only one part of the application. To recall what @+id does, it&#8217;s an idempotent &#8220;create this ID&#8221; action. In other words, if that ID has not been defined yet, it will get defined, otherwise it will be used. So it&#8217;s safe to use this notation multiple times with the same ID, which may be the reason why people overuse it: it looks like a safe bet, when it&#8217;s actually not.</p>
+<p>There are three approaches I have tried to deal with this issue:</p>
+<p><strong><span style="font-size: large;">1 - Pulling view IDs into styles</span></strong></p>
+<p>When redefining views multiple times in different layouts, one approach could be to extract the respective view IDs into a style, then apply the single shared style to all three variants of the view:</p>
+<p><script src="https://gist.github.com/4682862.js"></script></p>
+<p><script src="https://gist.github.com/4683025.js"></script></p>
+<p>While I first favored this, there are several problems with this approach: first, it reduces the visibility of IDs, which can be confusing when dealing with views in RelativeLayout, where you reference views using IDs. Moreover, IntelliJ IDEA at least will get terribly confused and issue an error, since it doesn&#8217;t resolve styles to inspect the correctness of a layout file (it&#8217;ll assume the view is missing the ID attribute.) Lastly, and this is purely a style question, one could argue that styles should be concerned with only visual appearance, not structural attributes like IDs.</p>
+<p><strong><span style="font-size: large;">2 - Pulling view IDs into ids.xml</span></strong></p>
+<p>Another option is to pull the shared view IDs into a global resource file, e.g. in res/ids.xml:</p>
+<p><script src="https://gist.github.com/4682090.js"></script></p>
+<p>This will turn the respective view IDs into first class resources themselves, and by extension make them reachable via R.id and in all layout files. Here, too, no @+-notation is required in any layout files anymore. You would define shared IDs in one, and only one location.</p>
+<p>The problems with this approach are similar to 1, but it clears up with the stylistic problem of defining IDs in a style sheet.</p>
+<p><strong><span style="font-size: large;">3 - How We Do It (TM)</span></strong></p>
+<p>We ended up taking a third route, which is one of convention. We&#8217;ve agreed on establishing a rule which says that it&#8217;s fine to use @+id in layouts files, but only use it in the default layout file, i.e. the one located in res/layout. Whenever a layout is overloaded using different configuations, then even for the same views, @id should be used. That way we ensure that there is only a single location where an ID actually gets defined, without taking it completely out of context when working with layout XML. Moreover, changing the view&#8217;s ID will lead to compilation errors, since all overloaded variants now reference a non-existing ID.</p>
+<p>I&#8217;d be interested to hear how everyone else deals with this.&nbsp;</p>
+<p>&nbsp;</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/01/31/update-them-remotes-/">Update Them Remotes!</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-01-31T00:00:00+01:00" pubdate data-updated="true">Jan 31<span>st</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>In an act of malevolence, I decided to update my Twitter and GitHub to use the same username. This means that repository URLs have changed and everything can now be found under:</p>
+<p><a href="https://github.com/mttkay">https://github.com/mttkay</a></p>
+<p>So update those remotes! Here&#8217;s how:</p>
+<p>$ git remote set-url &lt;remote&gt; &lt;new_url&gt;</p>
+<p>Sorry for the confusion.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/01/21/unblock-us-manager-for-android-updated-with-region-switcher/">Unblock Us Manager for Android Updated With Region Switcher</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-01-21T00:00:00+01:00" pubdate data-updated="true">Jan 21<span>st</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>I have pushed out an update to <a href="https://play.google.com/store/apps/details?id=com.github.unblockus.manager">Unblock Us Manager</a> on the Google Play store which adds the content region switcher a few users, including myself, were asking for. I&#8217;ve added a few small UI improvements along the way.</p>
+<p>Drop me a line if you find the app is not working well for you.</p>
+<p>&nbsp;</p>
+<p><a href="http://www.unblock-us.com">Unblock Us website</a></p>
+<p><a href="https://twitter.com/Unblock_Us">Unblock Us on Twitter</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/01/14/unblock-us-manager-now-available-on-google-play/">Unblock-Us Manager Now Available on Google Play</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-01-14T00:00:00+01:00" pubdate data-updated="true">Jan 14<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>I&#8217;m a big proponent of <a href="http://www.unblock-us.com/">Unblock Us</a>, a VPN-less solution for using online service that are not available in your country, such as Netflix, Hulu, Pandora etc., in your country. It&#8217;s purely based on DNS, which means it works on all network connected devices and has practically zero performance impacts.</p>
+<p>One thing that always bugged was that one has to reactivate their IP address with Unblock Us whenever it changes, e.g. after rebooting your WiFi router. Previously one had to go to unblock-us.com, wait for the service checker widget to detect that you had a new IP address, and manually reactivate it by clicking a pop-up link. On Google TV this was particularly annoying, since the browsing experience isn&#8217;t exactly great and it was just uncomfortable, since you didn&#8217;t even realize until e.g. Netflix would stop working.</p>
+<p>Long story short, I&#8217;ve written an Android application which does all that for you, automatically. It sits idle on your Android device and will be woken up by the system whenever your network connectivity changes. It will then automatically register with unblock-us.com with the current IP address. This should ensure a seamless viewing / listening experience for Unblock Us supported services.</p>
+<p>The app is tiny, requires merely internet access permissions, and doesn&#8217;t even require a password&#8211;just your email address you used to sign up with Unblock Us. Your email address will be used to send an activation request to unblock-us.com.</p>
+<p>Ideas for new features:</p>
+<ul>
+<li>Provide a region chooser similar to the one on the website</li>
+<li>Provide a service monitor that will notify you about outages of Netflix and other services</li>
+</ul>
+<p><a href="https://play.google.com/store/apps/details?id=com.github.unblockus.manager">Download for free on Google Play</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/18/why-the-google-tv-sdk-lacks-an-in-app-live-tv-widget/">Why the Google TV SDK Lacks an In-app Live TV Widget</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-18T00:00:00+02:00" pubdate data-updated="true">Oct 18<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>I have been following Google TV for a while now, and right after its announcement I was pretty excited, pondering the vast amount of opportunities for creating Android apps that would enrich your TV viewing experience.</p>
+<p>That said I was pretty dumbstruck to learn that a PIP (picture-in-picture) component, i.e. an Android view displaying the live TV stream to be embedded in your applications, does not exist (or more precisely: is not available for you to use.) In other words, the most obvious and powerful use case for an Android based TV platform, namely building Android applications around a live TV signal, is not possible to realize. Quoting from the documentation [1]:</p>
+<p class="note" style="margin: 0px 0px 1.5em; padding: 6px 8px 6px 10px; border-width: 0px 0px 0px 6px; border-left-style: solid; border-left-color: #999999; font-style: inherit; font-family: inherit; vertical-align: baseline; background-color: #efefef;"><strong>Note:</strong>&nbsp;The picture-in-picture (PIP) feature of the Live TV app is not available to other Android applications. Also, you can&#8217;t run an Android application in the small PIP window.</p>
+<p>&nbsp;</p>
+<p>As puzzling as Google&#8217;s decision to not provide such a component may sound at first, there is actually a very simple explanation for it. After last week&#8217;s DevFest event in Berlin, I had a chance to speak to Google&#8217;s <a href="https://plus.google.com/u/0/108026429364238951323">Matt Gaunt</a>, developer advocate for Google TV in London, about this very issue. Apparently, the lack of a PIP component has purely legal reasons. Think about it: if any Android application would be able to overlay its content over a TV channel, that channel&#8217;s content could easily be compromised and the viewer tricked into believing that the overlaid content is actually part of the show. While this would not be an issue with &#8220;trusted&#8221; services such as, say, a content overlay containing background information for a news show, malicious apps could easily exploit this to misrepresent or otherwise distort the content aired by the TV channel.</p>
+<p>Hence, to make this happen, Google would have to ask every single TV channel in the world for permission&nbsp;to allow content being overlaid by third party apps. You can easily see how unlikely this will ever be to happen, since Fox News is probably not interested in apps waving an Obama flag in front of their channel logo, to name one example.</p>
+<p>For now, unfortunately, Google TV remains a mere TV-or-apps experience, not both.</p>
+<p>[1]&nbsp;<a href="https://developers.google.com/tv/android/docs/gtv_android?hl=en#HardwareFeatures">https://developers.google.com/tv/android/docs/gtv_android?hl=en#HardwareFeatures</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/15/android-s-new-build-system-good-times-guaranteed-/">Android&#8217;s New Build System: Good Times Guaranteed.</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-15T00:00:00+02:00" pubdate data-updated="true">Oct 15<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>As of now, most of you probably heard that Google is abandoning Ant and is moving to a <a href="http://tools.android.com/tech-docs/new-build-system">new, modern build system</a> based on the excellent Gradle build system. I have been a big fan of Gradle for some time now, and tried promoting and working on its Android features in my spare time (as part of <a href="https://github.com/jvoegele/gradle-android-plugin">gradle-android-plugin</a>), so this comes as fantastic news to me.</p>
+<p>One thing I was worried about is that with a big change like this, the de facto standard for building, packaging and distributing Android library projects as created and promoted by the great guys behind <a href="http://code.google.com/p/maven-android-plugin/">android-maven-plugin</a>, i.e. the apklib artifact kind, would now become obsolete shortly after it had turned out so successful. Keep in mind that all work on Maven related features was and is entirely community driven, and not directly supported by Google.</p>
+<p>However, android-maven-plugin&#8217;s Manfred Moser just <a href="https://groups.google.com/forum/?pli=1#!topic/maven-android-developers/lQCMRKInuyk">clarified on the developer mailing list</a> that in fact they had been working together with both Xavier Ducrohet (the Google SDK tools lead) and Hans Dockter (founder of Gradle and Gradleware&#8217;s CEO) to streamline their efforts. Here&#8217;s what will happen:</p>
+<ul>
+<li>Programmatic access to SDK tools functionality will be provided by an open-source library built and maintained by Google, and will be available on Maven Central</li>
+<li>The former apklib artifact type will be improved upon and renamed to .aar (Android Archive), in the spirit of Java&#8217;s JAR and WAR types</li>
+</ul>
+<p>The Maven Android plugin will start supporting this new format in the forthcoming releases.</p>
+<p>Now what does all this mean for developers? It means mostly two things: First, with Google&#8217;s move to Gradle, there will be an excellent build system available out of the box with all the neat features Gradle provides, such as exposing a nice DSL using the Groovy programming language, dependency management via Ivy, plugin support, etc. pp. Second, no one using Maven now to build their Android apps will have to make the switch: android-maven-plugin will continue to work and co-exist, and even better, it will be a symbiotic co-existence between the two systems.</p>
+<p>If you want to get a 5 minute head start into Gradle for Android, have a look at my slide deck <a href="http://www.slideshare.net/matthiaskaeppler/hands-on-the-gradle">&#8220;Hands on the Gradle&#8221;</a>.</p>
+<p>Good times guaranteed!</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/08/testing-whether-an-application-is-installed-on-the-sd-card/">Testing Whether an Application Is Installed on the SD Card</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-08T00:00:00+02:00" pubdate data-updated="true">Oct 8<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Here&#8217;s a little code snippet that can be very useful whenever you have to deal with broadcast intents: it checks whether an application is installed on SD card. The reason why this is useful in combination with broadcast receivers is that apps installed to external storage will simply not receive all broadcasts (for instance, BOOT_COMPLETED cannot be received by apps on SD.)</p>
+<p>To test whether an app is installed on external storage, do this:</p>
+<p><script src="https://gist.github.com/3851440.js"></script></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/06/26/using-float-attributes-in-android/">Using Float Attributes in Android</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-06-26T00:00:00+02:00" pubdate data-updated="true">Jun 26<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Android&#8217;s powerful styling engine allows us to declare view attributes in XML that will become part of an app&#8217;s theme and accessible through XML and Java code.</p>
+<p>So if you have a custom view on which you want to define custom attributes (or re-use attributes that Android already declares), you start off by dropping a file called attrs.xml in your res/ folder:</p>
+<p><script src="https://gist.github.com/2994973.js"></script></p>
+<p>The user of your custom widget can then use these attributes in their own layouts and style sheets:</p>
+<p><script src="https://gist.github.com/2994987.js"></script></p>
+<p>Since users may pass custom values to these attributes, naturally you need a way to read them back in your widget code. This is achieved by going though Android&#8217;s obtainStyledAttributes helper:</p>
+<p><script src="https://gist.github.com/2995057.js"></script></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/04/20/ignition-0-2-released/">Ignition 0.2 Released</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-04-20T00:00:00+02:00" pubdate data-updated="true">Apr 20<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>We&#8217;ve just released version 0.2 of our ignition utility library for Android.</p>
+<p>Don&#8217;t know which benefits ignition brings to the table? Read about it <a href="http://androitism.posterous.com/ignition-01-is-here">here</a>.</p>
+<p><strong><span style="font-size: large;">What&#8217;s new?</span></strong></p>
+<p>We&#8217;ve worked a lot on improving IgnitedAsyncTask and IgnitedLocationManager, pushed many bug fixes, and restructured the samples apps. We&#8217;ve also added a sample for EndlessListAdapter for your convenience.</p>
+<p>Read the <a href="https://github.com/mttkay/ignition/wiki/Changelog">full changelog here</a>.</p>
+</div>
+  
+  
+
+
+    </article>
+  
   <div class="pagination">
+    
+      <a class="prev" href="/blog/page/2/">&larr; Older</a>
     
     <a href="/blog/archives">Blog Archives</a>
     
@@ -76,6 +507,26 @@
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/02/23/test-post/">test post</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/31/use-android-s-id-notation-with-care/">Use Android&#8217;s @+id Notation With Care</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/31/update-them-remotes-/">Update Them Remotes!</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/21/unblock-us-manager-for-android-updated-with-region-switcher/">Unblock Us Manager for Android Updated With Region Switcher</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/14/unblock-us-manager-now-available-on-google-play/">Unblock-Us Manager Now Available On Google Play</a>
+      </li>
     
   </ul>
 </section>
