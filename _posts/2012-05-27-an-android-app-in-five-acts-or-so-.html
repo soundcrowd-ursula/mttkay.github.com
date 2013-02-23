@@ -1,0 +1,22 @@
+---
+layout: post
+title: An Android App In Five Acts (or so)
+published: true
+---
+<p>I've recently picked up work again on a homebrew Android app, an app that I can use as a sandbox for trying out new development approaches and Android libraries. Part of my job is to work on an Android app, but this is different: not being bound to legacy APIs, to carrier specific hacks, to other people's design choices, and most importantly, to architectural decisions made in the past (years ago) that I wouldn't follow anymore today, makes for a very different coding experience.</p>
+<p>I am making progress relatively quickly and without much pain, something that couldn't really be said about Android development even a year ago. In this project I have incorporated several trending (if you will) libraries and patterns which I find very appealing to use. This series of blog post is my attempt at sharing the "how I'd do it" for 2012 Android application development.</p>
+<p>I won't go very much into detail about the idea behind the app or the app itself even. Most or all things I will show here can be applied to any Android app. Moreover, I will very much focus on the how-to-get-there things rather than the final product (which at the time of this writing does not yet exist anyway). That means if I show screenshots or mockups, they will very likely not exactly portrait the final app, but that shouldn't matter to you.</p>
+<p>To put it in a nutshell, what I'd like to cover are the steps I took to get the coding off the ground, including the design phase, how I translated design into code, and of course the libraries and development patterns I used. More precisely, here are some of the tools/approaches I used:</p>
+<ul>
+<li>pen &amp; paper to sketch my first ideas</li>
+<li>websequencediagrams.com to lay out the principal user flow</li>
+<li>Photoshop + Android UI stencils for mockups</li>
+<li>Maven/android-maven-plugin/m2e-android for project management</li>
+<li>Fragments, fragments, fragments</li>
+<li>Roboguice for dependency injection</li>
+<li>ActionBarSherlock for pre-Honeycomb ActionBar support</li>
+<li>HoloEverywhere (for pre-Honeycomb Holo styles)</li>
+<li>ignition (for easy tasking, image handling, caching, and general utility code)</li>
+<li>Model View Presenter (MVP) to implement the home screen</li>
+</ul>
+<p>A few more words before I start. Even if I present things in a linear fashion here, it doesn't mean I built it that way. I am a fan of rapid prototyping, and I revisited the design and even ideas several times, once even completely revamped the look and feel, so development was iterative rather than linear. One advice I would give therefore is to start coding early. The earlier you have a prototype to play with, the earlier you can discover flaws in your designs.</p>

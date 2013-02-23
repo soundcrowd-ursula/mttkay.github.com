@@ -1,0 +1,16 @@
+---
+layout: post
+title: ! 'Android''s new build system: Good times guaranteed.'
+published: true
+---
+<p>As of now, most of you probably heard that Google is abandoning Ant and is moving to a <a href="http://tools.android.com/tech-docs/new-build-system">new, modern build system</a> based on the excellent Gradle build system. I have been a big fan of Gradle for some time now, and tried promoting and working on its Android features in my spare time (as part of <a href="https://github.com/jvoegele/gradle-android-plugin">gradle-android-plugin</a>), so this comes as fantastic news to me.</p>
+<p>One thing I was worried about is that with a big change like this, the de facto standard for building, packaging and distributing Android library projects as created and promoted by the great guys behind <a href="http://code.google.com/p/maven-android-plugin/">android-maven-plugin</a>, i.e. the apklib artifact kind, would now become obsolete shortly after it had turned out so successful. Keep in mind that all work on Maven related features was and is entirely community driven, and not directly supported by Google.</p>
+<p>However, android-maven-plugin's Manfred Moser just <a href="https://groups.google.com/forum/?pli=1#!topic/maven-android-developers/lQCMRKInuyk">clarified on the developer mailing list</a> that in fact they had been working together with both Xavier Ducrohet (the Google SDK tools lead) and Hans Dockter (founder of Gradle and Gradleware's CEO) to streamline their efforts. Here's what will happen:</p>
+<ul>
+<li>Programmatic access to SDK tools functionality will be provided by an open-source library built and maintained by Google, and will be available on Maven Central</li>
+<li>The former apklib artifact type will be improved upon and renamed to .aar (Android Archive), in the spirit of Java's JAR and WAR types</li>
+</ul>
+<p>The Maven Android plugin will start supporting this new format in the forthcoming releases.</p>
+<p>Now what does all this mean for developers? It means mostly two things: First, with Google's move to Gradle, there will be an excellent build system available out of the box with all the neat features Gradle provides, such as exposing a nice DSL using the Groovy programming language, dependency management via Ivy, plugin support, etc. pp. Second, no one using Maven now to build their Android apps will have to make the switch: android-maven-plugin will continue to work and co-exist, and even better, it will be a symbiotic co-existence between the two systems.</p>
+<p>If you want to get a 5 minute head start into Gradle for Android, have a look at my slide deck <a href="http://www.slideshare.net/matthiaskaeppler/hands-on-the-gradle">"Hands on the Gradle"</a>.</p>
+<p>Good times guaranteed!</p>
