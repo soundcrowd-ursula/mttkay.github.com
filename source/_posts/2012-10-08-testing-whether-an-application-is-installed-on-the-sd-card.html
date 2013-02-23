@@ -1,0 +1,8 @@
+---
+layout: post
+title: Testing whether an application is installed on the SD card
+published: true
+---
+<p>Here's a little code snippet that can be very useful whenever you have to deal with broadcast intents: it checks whether an application is installed on SD card. The reason why this is useful in combination with broadcast receivers is that apps installed to external storage will simply not receive all broadcasts (for instance, BOOT_COMPLETED cannot be received by apps on SD.)</p>
+<p>To test whether an app is installed on external storage, do this:</p>
+<p><script src="https://gist.github.com/3851440.js"></script></p>

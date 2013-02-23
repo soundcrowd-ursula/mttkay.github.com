@@ -1,0 +1,18 @@
+---
+layout: post
+title: ! 'Robolectric: Setting ANDROID_HOME for all tests (MacOS/Eclipse)'
+published: true
+---
+<p>I just stumbled over the somewhat annoying issue that when running <a href="http://pivotal.github.com/robolectric/">Robolectric</a> tests in Eclipse, the library must see the ANDROID_HOME environment variable, or resource lookups in the android namespace will fail (you'll see a warning about this on the console).</p>
+<p>Now, you can of course fix that by adding ANDROID_HOME to every single Eclipse Run configuration for your tests, but that would be cumbersome. It would be better to have this variable set for Eclipse so that all Java processes forked from it will inherit it, including your test runs. Unfortunately MacOS X doesn't seem to have a straight forward solution to that. I tried modifying Eclipse's plist file, to define <a href="http://developer.apple.com/library/mac/#documentation/General/Reference/InfoPlistKeyReference/Articles/LaunchServicesKeys.html#//apple_ref/doc/uid/TP40009250-SW1">LSEnvironment</a>, but that did not have any effect.</p>
+<p>However, what you can do is have all MacOS processes inherit it by <a href="http://www.digitaledgesw.com/node/31">setting it in /etc/launchd.conf</a>. This is somewhat quick and dirty, since you only really need it in Eclipse and Terminal, but it does the job:</p>
+<div class="CodeRay">
+  <div class="code"><pre>$sudo vim /etc/launchd.conf</pre></div>
+</div>
+
+<p>Now add this line:</p>
+<div class="CodeRay">
+  <div class="code"><pre>setenv ANDROID_HOME /path/to/android-sdk</pre></div>
+</div>
+
+<p>Reboot, and rejoice.</p>

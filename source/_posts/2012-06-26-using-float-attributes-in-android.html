@@ -1,0 +1,12 @@
+---
+layout: post
+title: Using float attributes in Android
+published: true
+---
+<p>Android's powerful styling engine allows us to declare view attributes in XML that will become part of an app's theme and accessible through XML and Java code.</p>
+<p>So if you have a custom view on which you want to define custom attributes (or re-use attributes that Android already declares), you start off by dropping a file called attrs.xml in your res/ folder:</p>
+<p><script src="https://gist.github.com/2994973.js"></script></p>
+<p>The user of your custom widget can then use these attributes in their own layouts and style sheets:</p>
+<p><script src="https://gist.github.com/2994987.js"></script></p>
+<p>Since users may pass custom values to these attributes, naturally you need a way to read them back in your widget code. This is achieved by going though Android's obtainStyledAttributes helper:</p>
+<p><script src="https://gist.github.com/2995057.js"></script></p>
