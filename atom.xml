@@ -4,7 +4,7 @@
   <title><![CDATA[androitism.]]></title>
   <link href="http://mttkay.github.com/atom.xml" rel="self"/>
   <link href="http://mttkay.github.com/"/>
-  <updated>2013-02-23T20:05:47+01:00</updated>
+  <updated>2013-02-23T20:11:09+01:00</updated>
   <id>http://mttkay.github.com/</id>
   <author>
     <name><![CDATA[Matthias Käppler]]></name>
@@ -140,21 +140,6 @@
     <content type="html"><![CDATA[<p>Here&#8217;s a little code snippet that can be very useful whenever you have to deal with broadcast intents: it checks whether an application is installed on SD card. The reason why this is useful in combination with broadcast receivers is that apps installed to external storage will simply not receive all broadcasts (for instance, BOOT_COMPLETED cannot be received by apps on SD.)</p>
 <p>To test whether an app is installed on external storage, do this:</p>
 <p><script src="https://gist.github.com/3851440.js"></script></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Using float attributes in Android]]></title>
-    <link href="http://mttkay.github.com/blog/2012/06/26/using-float-attributes-in-android/"/>
-    <updated>2012-06-26T00:00:00+02:00</updated>
-    <id>http://mttkay.github.com/blog/2012/06/26/using-float-attributes-in-android</id>
-    <content type="html"><![CDATA[<p>Android&#8217;s powerful styling engine allows us to declare view attributes in XML that will become part of an app&#8217;s theme and accessible through XML and Java code.</p>
-<p>So if you have a custom view on which you want to define custom attributes (or re-use attributes that Android already declares), you start off by dropping a file called attrs.xml in your res/ folder:</p>
-<p><script src="https://gist.github.com/2994973.js"></script></p>
-<p>The user of your custom widget can then use these attributes in their own layouts and style sheets:</p>
-<p><script src="https://gist.github.com/2994987.js"></script></p>
-<p>Since users may pass custom values to these attributes, naturally you need a way to read them back in your widget code. This is achieved by going though Android&#8217;s obtainStyledAttributes helper:</p>
-<p><script src="https://gist.github.com/2995057.js"></script></p>
 ]]></content>
   </entry>
   

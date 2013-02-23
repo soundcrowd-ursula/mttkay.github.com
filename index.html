@@ -417,48 +417,6 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2012/06/26/using-float-attributes-in-android/">Using Float Attributes in Android</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-06-26T00:00:00+02:00" pubdate data-updated="true">Jun 26<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Android&#8217;s powerful styling engine allows us to declare view attributes in XML that will become part of an app&#8217;s theme and accessible through XML and Java code.</p>
-<p>So if you have a custom view on which you want to define custom attributes (or re-use attributes that Android already declares), you start off by dropping a file called attrs.xml in your res/ folder:</p>
-<p><script src="https://gist.github.com/2994973.js"></script></p>
-<p>The user of your custom widget can then use these attributes in their own layouts and style sheets:</p>
-<p><script src="https://gist.github.com/2994987.js"></script></p>
-<p>Since users may pass custom values to these attributes, naturally you need a way to read them back in your widget code. This is achieved by going though Android&#8217;s obtainStyledAttributes helper:</p>
-<p><script src="https://gist.github.com/2995057.js"></script></p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
       <h1 class="entry-title"><a href="/blog/2012/04/20/ignition-0-2-released/">Ignition 0.2 Released</a></h1>
     
     
@@ -487,6 +445,94 @@
 <p><strong><span style="font-size: large;">What&#8217;s new?</span></strong></p>
 <p>We&#8217;ve worked a lot on improving IgnitedAsyncTask and IgnitedLocationManager, pushed many bug fixes, and restructured the samples apps. We&#8217;ve also added a sample for EndlessListAdapter for your convenience.</p>
 <p>Read the <a href="https://github.com/mttkay/ignition/wiki/Changelog">full changelog here</a>.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/03/09/ignition-0-1-is-here/">Ignition 0.1 Is Here</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-03-09T00:00:00+01:00" pubdate data-updated="true">Mar 9<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Today it&#8217;s &#8220;Fun Friday&#8221; (10% time)&nbsp;at Qype, so we thought this would be a good opportunity to release the first version of our <a href="https://github.com/mttkay/ignition">ignition</a> library for Android!</p>
+<p>What&#8217;s ignition? In short, it&#8217;s a rewrite of <a href="https://github.com/mttkay/droid-fu">Droid-Fu</a>. What is Droid-Fu? It was an attempt to create a utility library for Android that makes your life easier by creating add-ons and wrappers for the Android framework classes that are just a little friendler to use. Our approach with Droid-Fu was to pull all the helper code and boilerplate we wrote for our Qype app into a reusable library, but we did a poor job at maintaining it. We didn&#8217;t have proper release and issue management in place and since I was short of spare time (not least due to my work on <a href="http://brainflush.wordpress.com/2011/10/31/our-android-book-android-in-practice-is-here/">Android in Practice</a>), it just never happened. We soon&nbsp;had many issues filed, but it was virtually impossible for us to backtrack through all the snapshot versions to find out which one it was actually affecting.</p>
+<p>Moreover, we did mistakes with Droid-Fu&#8217;s API design, and we wanted to have a chance of fixing these without horribly breaking all the apps that used it. Yes, we could have done a &#8220;Droid-Fu 2.0&#8221; (even though there never even was a 1.0) or a &#8220;Droid-Fu NG&#8221;, but I felt the least intrusive way would be to start out fresh as morning dew.</p>
+<p>The fruit of this labor is ignition, and I believe we improved things a lot. First, here&#8217;s what ignition has to offer in the first place:</p>
+<p><span style="font-size: large;">Cross-cutting stuff</span></p>
+<ul>
+<li>helper classes for dealing with Intents, dialogs, device screens, etc.</li>
+<li>an improved version of AsyncTask (<a href="http://mttkay.github.com/ignition-docs/ignition-core/apidocs/com/github/ignition/core/tasks/IgnitedAsyncTask.html">IgnitedAsyncTask</a>) which makes it a lot easier to deal with the following things:    
+<ul>
+<li>task life-cycle: there are onStart, onComplete, onSuccess, and onError callbacks</li>
+<li>yes, your task may now raise exceptions while running</li>
+<li>all callbacks are guaranteed to be passed a valid Context object, so that you can immediately update the UI (those must be bound and unbound using connect/disconnect to avoid memory leaks!)</li>
+<li>re-use task logic from pre- and post-execute handlers by being able to bind to different callables that execute the actual job logic</li>
+</ul>
+</li>
+<li><a href="http://mttkay.github.com/ignition-docs/ignition-core/apidocs/com/github/ignition/core/adapters/EndlessListAdapter.html">EndlessListAdapter</a> can be used to implement lists that fetch more content when reaching the bottom of the list</li>
+</ul>
+<p><span style="font-size: large;">Dealing with remote images</span></p>
+<ul>
+<li><a href="http://mttkay.github.com/ignition-docs/ignition-core/apidocs/com/github/ignition/core/widgets/RemoteImageView.html">RemoteImageView</a> is a drop-in replacement for ImageView which can download its image resource from the Web and show a progress spinner in the mean time</li>
+<li>if you&#8217;re showing a whole bunch of these, you can use <a href="http://mttkay.github.com/ignition-docs/ignition-core/apidocs/com/github/ignition/core/adapters/RemoteImageGalleryAdapter.html">RemoteImageGalleryAdapter</a> which will feed RemoteImageViews into an Android gallery widget</li>
+<li>both are backed by <a href="http://mttkay.github.com/ignition-docs/ignition-support/apidocs/com/github/ignition/support/images/remote/RemoteImageLoader.html">RemoteImageLoader</a>, which can be used independently to download images drawable into ImageViews asynchronously. We use this to download thumbnail images for list elements in ListViews on the fly.</li>
+<li>all this in turn is backed by <a href="http://mttkay.github.com/ignition-docs/ignition-support/apidocs/com/github/ignition/support/cache/ImageCache.html">ImageCache</a>, a 2-level cache which is able to cache to both internal storage and SD card, therefore minimizing network traffic when dealing with lots of data (as is the case with images)</li>
+</ul>
+<p><span style="font-size: large;">Dealing with HTTP requests and network failures</span></p>
+<ul>
+<li>speaking of caching, you can not only cache image data, but also HTTP responses using <a href="http://mttkay.github.com/ignition-docs/ignition-support/apidocs/com/github/ignition/support/http/cache/HttpResponseCache.html">HttpResponseCache</a></li>
+<li>better yet, <a href="http://mttkay.github.com/ignition-docs/ignition-support/apidocs/com/github/ignition/support/http/IgnitedHttp.html">IgnitedHttp</a> is an abstraction of Android&#8217;s Apache HttpClient that exposes a simple DSL to build and send HTTP requests, like so:    
+<ul>
+<li>new IgnitedHttp().get(&#8220;http://example.com&#8221;).expecting(200, 404).retries(3).withTimeout(5000).send();</li>
+</ul>
+</li>
+<li>it integrates with the response cache by setting a single flag</li>
+<li>it will enable GZip uncompression of response data with a single flag</li>
+<li>it will register a BroadcastReceiver which listens for changes in network configuration and automatically update e.g. proxy settings for you (this can be a major source of error in your app for users who must go through carrier proxies on 3G and then fail over from or to Wi-Fi)</li>
+<li>it has a more robust request-retry logic than the standard HttpClient does</li>
+</ul>
+<p><span style="font-size: large;">Dealing with location</span></p>
+<p>Stefano has build a fantastic new way of dealing with location on Android. It takes all the cruft out of your Activities and hides it in a single annotation you drop onto an Activity. It will then automagically inject location fixes into a prepared field, using the power of AspectJ. <a href="http://mod3rn-android-coding.posterous.com/ignition-v01-ignited-way-of-doing-location">Read more about it on his blog</a>.</p>
+<p><span style="font-size: large;">What&#8217;s different to Droid-Fu?</span></p>
+<p>Except for the location module, all of this has existed in Droid-Fu. As I mentioned before, the motivation behind iginition was not to build a new library, but re-launch what worked well for us in a more maintainable and less intrusive way. Here&#8217;s what changed:</p>
+<ul>
+<li>The project is now split into multiple modules, so you can decide which ones you&#8217;d like to link. This makes the whole thing less monolithic, and for instance doesn&#8217;t force the Maps dependency on you if you do not want to use the location stuff</li>
+<li>The project is less intrusive. You do not have to inherit from BetterApplication, BetterActivity or BetterService anymore (these classes have been removed). This was done as to make ignition integrate seamlessly with other libraries like <a href="http://code.google.com/p/roboguice/">Roboguice</a>. We felt that ignition was not supposed to be a framework: it should be an all-opt-in solution.</li>
+<li>The API has received a major cleanup. Things have been renamed, restructured, and generally made more consistent.</li>
+</ul>
+<p>Where can I get more information?</p>
+<p>It&#8217;s <a href="https://github.com/mttkay/ignition">all on GitHub</a> right now, but here are some quick links to useful stuff:</p>
+<ul>
+<li><a href="https://github.com/mttkay/ignition/wiki/Installation-and-setup">installation / usage guide</a></li>
+<li><a href="https://github.com/mttkay/ignition/wiki/Sample-applications">sample projects</a></li>
+</ul>
+<p>Thanks again for everyone who contributed issue report and fixes! We promise we&#8217;ll do more regular updates with this library.</p>
 </div>
   
   
