@@ -1,0 +1,23 @@
+---
+layout: post
+title: "sandbox"
+date: 2013-02-23 21:08
+comments: true
+published: false
+categories: 
+---
+
+# code test
+
+{% codeblock test code lang:java %}
+public void foo(String s) {
+  // ...
+}
+{% endcodeblock %}
+
+# images
+
+blah blah
+{% img right /images/email.png %}
+blah blah
+
