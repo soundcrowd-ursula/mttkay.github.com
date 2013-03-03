@@ -7,7 +7,7 @@
 	<meta name="author" content="Matthias Käppler">
 
 	
-	<meta name="description" content="In 2009, I introduced Signpost, a lightweight, client-side OAuth library for Java. I initially created it to power the API connector in our Qype &hellip;">
+	<meta name="description" content="This post also appears on&nbsp;engineering.qype.com. We recently started getting our hands onto some of the shiny new Ice Cream Sandwich APIs, &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -92,6 +92,57 @@
 
 	
 	<div id="content" class="inner">
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/2012/03/03/getting-to-grips-with-the-android-4-0-3-social-apis/">
+		
+			Getting to Grips With the Android 4.0.3 Social APIs</a>
+	</h2>
+	<div class="entry-content">
+		<ul>
+</ul>
+<p>This post also appears on&nbsp;<a href="http://engineering.qype.com/" target="_blank">engineering.qype.com</a>.</p>
+<p>We recently started getting our hands onto some of the shiny new Ice Cream Sandwich APIs, particularly Beam and the <a href="http://android-developers.blogspot.com/2012/02/new-social-apis-in-android-ics.html">social stream API</a> that was introduced with Android 4.0.3. Integration turned out to be a little harder than we expected, mostly due to two things: code verbosity (you&#8217;ll write a lot of boilerplate) and undocumented pitfalls. With this post I&#8217;d like to shed some light on a few things that bit us when developing with the new APIs.</p>
+<p><span style="font-size: x-large;">Integrating with the social stream</span></p>
+<p>First of all, you should know that to get going with the social stream, you will have to go through two major steps:</p>
+<ol>
+<li>Publish your app as an account provider, and log in your users via the <a href="http://developer.android.com/reference/android/accounts/AccountManager.html">AccountManager</a> API, so that contacts from your service can be synced with the Android address book (now called the People app in ICS)</li>
+<li>Once your contacts are synced with the People app, import their status updates into the &#8220;Recent Updates&#8221; feed</li>
+</ol>
+<p>I won&#8217;t talk&nbsp;about 1. There are two excellent blog posts on how to deal with <a href="http://www.c99.org/2010/01/23/writing-an-android-sync-provider-part-1/">connecting accounts</a> and <a href="http://www.c99.org/2010/01/23/writing-an-android-sync-provider-part-2/">syncing contacts</a> respectively, plus the SampleSyncAdapter app that is shipped with the SDK ApiDemos. Once you&#8217;re there, adding support for publishing a user&#8217;s social feed is generally quite simple. From here on I assume that you have read all the documentation that is available, since I want to focus on the difficult parts. Let&#8217;s have a look at the final product first.</p>
+<p>[[posterous-content:yFlmybGeCDDFFbADcDyf]]</p>
+<p>Let&#8217;s quickly recap when the &#8220;Recent Updates&#8221; pane appears. It becomes available whenever there are status updates from the contact you&#8217;re looking at that are no older than a few days (I believe it&#8217;s five days, but I haven&#8217;t exactly checked that). There is also a threshold for how many items will ever show up at the same time, and as pointed out in the docs, this threshold is platform or even device specific.</p>
+<p>There are two ways to import these status updates from your service: <em>eagerly</em>, as part of the contacts sync (i.e. in your contacts SyncAdapter), or <em>lazily</em>, via an Intent that is fired whenever a user looks at another user&#8217;s profile. Again, the general mechanics behind this are outlined on the <a href="http://android-developers.blogspot.com/2012/02/new-social-apis-in-android-ics.html">Android dev blog</a>.</p>
+<p>Generally, you don&#8217;t want to fetch status updates (plus images) for a hundred or more contacts as part of the sync, since it&#8217;s very unlikely that a user would look at all of them to see their status updates. I say &#8220;plus images&#8221;, because you will have to download them synchronously and either insert them in binary form into the <a href="http://developer.android.com/reference/android/provider/ContactsContract.StreamItemPhotos.html">StreamItemPhotos</a> table, or write them to disk using an <a href="http://developer.android.com/reference/android/content/res/AssetFileDescriptor.html">AssetFileDescriptor</a>. Since ICS devices often have high resolution displays, you want to download high res images, so that&#8217;s a lot of data you&#8217;re pushing over the wire, keep that in mind.</p>
+<p>Hence, you most likely want to go down the callback route, perhaps with optionally pre-populating important contacts with their status updates during contacts sync (what important means depends on your service, but you could for instance check if the user has starred a contact, and prefetch status updates accordingly).</p>
+<p>Regardless for which sync strategy you settle (lazy or pre-fetched or hybrid), here are a few things that bit me while syncing social stream items.
+		
+		<a href="/blog/2012/03/03/getting-to-grips-with-the-android-4-0-3-social-apis/" class="more-link">Read on &rarr;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-03-03T00:00:00+01:00" pubdate data-updated="true">Mar 3<span>rd</span>, 2012</time></div>
+	<div class="tags">
+
+</div>
+	
+</div></article>
 
 
     <article class="post">

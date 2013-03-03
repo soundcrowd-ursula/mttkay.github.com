@@ -71,12 +71,18 @@
         <lastmod>2013-02-23T20:42:05+01:00</lastmod>
     </url>
     <url>
+        <loc>
+            http://mttkay.github.com/blog/2013/03/02/herding-http-requests-or-why-your-keep-alive-connection-may-be-dead/
+        </loc>
+        <lastmod>2013-03-03T23:19:34+01:00</lastmod>
+    </url>
+    <url>
         <loc>http://mttkay.github.com/blog/archives/</loc>
-        <lastmod>2013-02-23T20:42:05+01:00</lastmod>
+        <lastmod>2013-03-03T23:19:34+01:00</lastmod>
     </url>
     <url>
         <loc>http://mttkay.github.com/</loc>
-        <lastmod>2013-02-23T20:42:05+01:00</lastmod>
+        <lastmod>2013-03-03T23:19:34+01:00</lastmod>
     </url>
     <url>
         <loc>http://mttkay.github.com/robots.txt</loc>
