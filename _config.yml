@@ -3,8 +3,8 @@
 # ----------------------- #
 
 url: http://mttkay.github.com
-title: androitism.
-subtitle: Bits and bobs for the busy Android coder.
+title: mttkay here.
+subtitle: 
 author: Matthias Käppler
 simple_search: http://google.com/search
 description: 
@@ -93,7 +93,7 @@ disqus_short_name:
 disqus_show_comment_count: false
 
 # Google Analytics
-google_analytics_tracking_id:
+google_analytics_tracking_id: UA-38754031-1
 
 # Facebook Like
 facebook_like: false
