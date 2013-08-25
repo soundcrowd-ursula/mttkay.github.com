@@ -1,0 +1,480 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[mttkay here.]]></title>
+  <link href="http://mttkay.github.com/atom.xml" rel="self"/>
+  <link href="http://mttkay.github.com/"/>
+  <updated>2013-03-03T23:23:02+01:00</updated>
+  <id>http://mttkay.github.com/</id>
+  <author>
+    <name><![CDATA[Matthias Käppler]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Herding HTTP Requests, Or Why Your Keep-Alive Connection May Already Be Dead]]></title>
+    <link href="http://mttkay.github.com/blog/2013/03/02/herding-http-requests-or-why-your-keep-alive-connection-may-be-dead/"/>
+    <updated>2013-03-02T21:05:00+01:00</updated>
+    <id>http://mttkay.github.com/blog/2013/03/02/herding-http-requests-or-why-your-keep-alive-connection-may-be-dead</id>
+    <content type="html"><![CDATA[<p>One of the more expensive things you can do on Android, or mobile in general, is
+sending and receiving data over a mobile network connection. Holding a dedicated channel
+in particular causes high battery consumption,
+as much as <a href="http://en.wikipedia.org/wiki/Radio_Resource_Control#cite_ref-energyconsumption_2-0">a hundred times more compared to being idle</a>. Moreover, there is overhead
+on various levels when establishing a dedicated connection: First, <a href="http://developer.sonymobile.com/2010/08/23/android-tutorial-reducing-power-consumption-of-connected-apps/">it has has been shown</a>
+that poor timing w.r.t. sending network requests can leave the connection in states
+with high power consumption before going back to idle, even when it&#8217;s not actively
+used. Second, establishing an HTTP connection, especially when using secure sockets (HTTPS),
+will result in a handshake being performed between the mobile client and the server,
+even when multiple requests are sent in quick succession. If no proper precaution
+is taken, these handshakes will occur N times when N requests are being sent, and your app
+will incur the associated extra cost of network traffic and battery consumption.</p>
+
+<p>To mitigate these issues, it is generally advisable to batch HTTP requests whenever
+possible and send them over a <a href="http://en.wikipedia.org/wiki/HTTP_persistent_connection">persistent HTTP connection</a>.
+This can be implemented using request queues (persisted or in memory)
+which are emptied at a given time using HTTP Keep-Alive. At SoundCloud we have recently
+implemented a tracking component which batches up a number of requests and flushes it
+in certain intervals to minimize the aforementioned overhead. However, we stumbled
+a few times when trying to make persistent connections work with HttpURLConnection, so make
+sure to double check your own implementation against the next few paragraphs or
+you may unwittingly send a large number of requests over separate connections,
+even when Keep-Alive is enabled. So let me break it to you:</p>
+
+<h1>HTTP Keep-Alive on Android does NOT just work</h1>
+
+<p>Fortunately for us, Android sets the Keep-Alive header by default, which a quick glance
+at the header fields of a newly opened HttpURLConnection shows. However, we were
+surprised to see that Android would still happily open new connections when
+using code like the snippet below:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Collection</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">requestUrls</span> <span class="o">=</span> <span class="o">...;</span>
+</span><span class='line'><span class="n">HttpURLConnection</span> <span class="n">connection</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">for</span> <span class="o">(</span><span class="n">String</span> <span class="n">url</span> <span class="o">:</span> <span class="n">requestUrls</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">connection</span> <span class="o">=</span> <span class="o">(</span><span class="n">HttpURLConnection</span><span class="o">)</span> <span class="k">new</span> <span class="n">URL</span><span class="o">(</span><span class="n">url</span><span class="o">).</span><span class="na">openConnection</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">connection</span><span class="o">.</span><span class="na">setConnectTimeout</span><span class="o">(</span><span class="n">CONNECT_TIMEOUT</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">connection</span><span class="o">.</span><span class="na">setReadTimeout</span><span class="o">(</span><span class="n">READ_TIMEOUT</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">connection</span><span class="o">.</span><span class="na">connect</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="kd">final</span> <span class="kt">int</span> <span class="n">response</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">getResponseCode</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">response</span> <span class="o">==</span> <span class="mi">200</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="c1">// handle success</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>          <span class="c1">// handle error code</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="c1">// ...</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">connection</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">connection</span><span class="o">.</span><span class="na">disconnect</span><span class="o">();</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Sniffing these requests with Wireshark showed that they were sent using separate
+TCP streams coming from different client ports (indicating separate connections.)
+Looking at the code, we&#8217;re not closing the connection until we&#8217;ve sent the last
+request, and we made sure Keep-Alive is actually set for every request, so what&#8217;s the problem here?</p>
+
+<p><img src="http://mttkay.github.com/images/posts/keep_alive_not_working.png"></p>
+
+<h1>Finding the culprit</h1>
+
+<p>Revisiting <a href="http://docs.oracle.com/javase/6/docs/technotes/guides/net/http-keepalive.html">Persistent Connections</a>
+we found this curious paragraph:</p>
+
+<blockquote><p>When the application finishes reading the response body or when the application calls close() on the InputStream returned by URLConnection.getInputStream(), the JDK&#8217;s HTTP protocol handler will try to clean up the connection and if successful, put the connection into a connection cache for reuse by future HTTP requests.</p></blockquote>
+
+
+<p>Apparently, in order to actually being able to reuse a connection, the implementation must
+know where one HTTP request on the same TCP connection ends and the next one starts.
+In our case, we weren&#8217;t interested in the response payload since these were fire-and-forget
+style requests, so we simply added a</p>
+
+<p><code>connection.getInputStream().close();</code></p>
+
+<p>as the documentation suggests. This, still, did not work for us. Again Android would not reuse
+TCP sockets but open a new one for every request; we haven&#8217;t found out why this is happening
+so please leave me a comment if you do. From here on you&#8217;re left with two options:
+You either fully consume the response payload, which you may want to do anyway depending
+on your mileage. This would mean reading bytes from the input stream until hitting the EOS byte.
+Alternatively, if you&#8217;re not interested in the server&#8217;s response, you should do as
+the document above suggests and send an HTTP HEAD instead:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="o">...</span>
+</span><span class='line'><span class="k">for</span> <span class="o">(</span><span class="n">String</span> <span class="n">url</span> <span class="o">:</span> <span class="n">requestUrls</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">connection</span> <span class="o">=</span> <span class="o">(</span><span class="n">HttpURLConnection</span><span class="o">)</span> <span class="k">new</span> <span class="n">URL</span><span class="o">(</span><span class="n">url</span><span class="o">).</span><span class="na">openConnection</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">connection</span><span class="o">.</span><span class="na">setRequestMethod</span><span class="o">(</span><span class="s">&quot;HEAD&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// as above</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="c1">// ...</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">...</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note that in this case, neither closing the input stream nor consuming it is required
+since there will be no response payload to read from.
+Returning to Wireshark, here&#8217;s what the communication with the server looks like now:</p>
+
+<p><img src="http://mttkay.github.com/images/posts/tcp_stream_keep_alive.png"></p>
+
+<p>This is what we wanted to begin with: Client and server establish a TCP stream, then sending all
+six GET requests over the same connection. After doing our work, either the client or the
+server will terminate the connection by starting a FIN exchange. Here it is important to
+understand that calling <code>connection.disconnent()</code> does not guarantee triggering FIN.
+From the documentation of <a href="http://developer.android.com/reference/java/net/HttpURLConnection.html">HttpURLConnection</a>:</p>
+
+<blockquote><p>Once the response body has been read, the HttpURLConnection should be closed by calling disconnect(). <br/>Disconnecting releases the resources held by a connection so they may be closed or reused.</p></blockquote>
+
+
+<p>The emphasis here is on <em>may</em>: as you can see from the previous screenshot, it was the server
+that decided to terminate the connection at some point, and not our call to <code>disconnect</code>,
+since the first FIN is sent by the destination not the source.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Use Android's @+id Notation With Care]]></title>
+    <link href="http://mttkay.github.com/blog/2013/01/31/use-android-s-id-notation-with-care/"/>
+    <updated>2013-01-31T00:00:00+01:00</updated>
+    <id>http://mttkay.github.com/blog/2013/01/31/use-android-s-id-notation-with-care</id>
+    <content type="html"><![CDATA[<p>Being sloppy when it comes to managing your application&#8217;s resource IDs can lead to subtle bugs that are difficult to find and debug. Imagine a scenario where foo_activity.xml holds the layout definition for FooActivity, and you define three different variants for different screen configurations:</p>
+<p style="padding-left: 30px;">res/layout/foo_activity.xml<br />res/layout-land/foo_activity.xml<br />res/layout-sw600dp/foo_activity.xml</p>
+<p>Now, with some certainty these three layouts will share the same views, with the same IDs, just slightly differently styled or arranged. Let&#8217;s furthermore assume in all three layouts, we have a TextView:</p>
+<p><script src="https://gist.github.com/4682037.js"></script></p>
+<p>FooActivity will of course retrieve a reference to this TextView via findViewById:</p>
+<p><script src="https://gist.github.com/4682053.js"></script></p>
+<p>Now what happens if in the main layout file (layout/foo_activity) you change the view&#8217;s ID? You may be surprised to hear that your application will still compile. That&#8217;s because the old view ID, my_text, still exists in R.java, since while now gone from layout/foo_activity.xml, it&#8217;s still (re)created using the @+id notation in the other two layouts, thus continuing to exist in the ID pool. Whenever these layouts are loaded and you reference the new ID from FooActivity, then of course your application will crash.</p>
+<p>The problem here stems from violating the DRY principle: we&#8217;re carelessly repeating the code which creates a resource ID, when ideally, it should only ever be found in one, and only one part of the application. To recall what @+id does, it&#8217;s an idempotent &#8220;create this ID&#8221; action. In other words, if that ID has not been defined yet, it will get defined, otherwise it will be used. So it&#8217;s safe to use this notation multiple times with the same ID, which may be the reason why people overuse it: it looks like a safe bet, when it&#8217;s actually not.</p>
+<p>There are three approaches I have tried to deal with this issue:</p>
+<p><strong><span style="font-size: large;">1 - Pulling view IDs into styles</span></strong></p>
+<p>When redefining views multiple times in different layouts, one approach could be to extract the respective view IDs into a style, then apply the single shared style to all three variants of the view:</p>
+<p><script src="https://gist.github.com/4682862.js"></script></p>
+<p><script src="https://gist.github.com/4683025.js"></script></p>
+<p>While I first favored this, there are several problems with this approach: first, it reduces the visibility of IDs, which can be confusing when dealing with views in RelativeLayout, where you reference views using IDs. Moreover, IntelliJ IDEA at least will get terribly confused and issue an error, since it doesn&#8217;t resolve styles to inspect the correctness of a layout file (it&#8217;ll assume the view is missing the ID attribute.) Lastly, and this is purely a style question, one could argue that styles should be concerned with only visual appearance, not structural attributes like IDs.</p>
+<p><strong><span style="font-size: large;">2 - Pulling view IDs into ids.xml</span></strong></p>
+<p>Another option is to pull the shared view IDs into a global resource file, e.g. in res/ids.xml:</p>
+<p><script src="https://gist.github.com/4682090.js"></script></p>
+<p>This will turn the respective view IDs into first class resources themselves, and by extension make them reachable via R.id and in all layout files. Here, too, no @+-notation is required in any layout files anymore. You would define shared IDs in one, and only one location.</p>
+<p>The problems with this approach are similar to 1, but it clears up with the stylistic problem of defining IDs in a style sheet.</p>
+<p><strong><span style="font-size: large;">3 - How We Do It (TM)</span></strong></p>
+<p>We ended up taking a third route, which is one of convention. We&#8217;ve agreed on establishing a rule which says that it&#8217;s fine to use @+id in layouts files, but only use it in the default layout file, i.e. the one located in res/layout. Whenever a layout is overloaded using different configuations, then even for the same views, @id should be used. That way we ensure that there is only a single location where an ID actually gets defined, without taking it completely out of context when working with layout XML. Moreover, changing the view&#8217;s ID will lead to compilation errors, since all overloaded variants now reference a non-existing ID.</p>
+<p>I&#8217;d be interested to hear how everyone else deals with this.&nbsp;</p>
+<p>&nbsp;</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Update Them Remotes!]]></title>
+    <link href="http://mttkay.github.com/blog/2013/01/31/update-them-remotes-/"/>
+    <updated>2013-01-31T00:00:00+01:00</updated>
+    <id>http://mttkay.github.com/blog/2013/01/31/update-them-remotes-</id>
+    <content type="html"><![CDATA[<p>In an act of malevolence, I decided to update my Twitter and GitHub to use the same username. This means that repository URLs have changed and everything can now be found under:</p>
+<p><a href="https://github.com/mttkay">https://github.com/mttkay</a></p>
+<p>So update those remotes! Here&#8217;s how:</p>
+<p>$ git remote set-url &lt;remote&gt; &lt;new_url&gt;</p>
+<p>Sorry for the confusion.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Unblock Us Manager for Android Updated With Region Switcher]]></title>
+    <link href="http://mttkay.github.com/blog/2013/01/21/unblock-us-manager-for-android-updated-with-region-switcher/"/>
+    <updated>2013-01-21T00:00:00+01:00</updated>
+    <id>http://mttkay.github.com/blog/2013/01/21/unblock-us-manager-for-android-updated-with-region-switcher</id>
+    <content type="html"><![CDATA[<p>I have pushed out an update to <a href="https://play.google.com/store/apps/details?id=com.github.unblockus.manager">Unblock Us Manager</a> on the Google Play store which adds the content region switcher a few users, including myself, were asking for. I&#8217;ve added a few small UI improvements along the way.</p>
+<p>Drop me a line if you find the app is not working well for you.</p>
+<p>&nbsp;</p>
+<p><a href="http://www.unblock-us.com">Unblock Us website</a></p>
+<p><a href="https://twitter.com/Unblock_Us">Unblock Us on Twitter</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Unblock-Us Manager Now Available On Google Play]]></title>
+    <link href="http://mttkay.github.com/blog/2013/01/14/unblock-us-manager-now-available-on-google-play/"/>
+    <updated>2013-01-14T00:00:00+01:00</updated>
+    <id>http://mttkay.github.com/blog/2013/01/14/unblock-us-manager-now-available-on-google-play</id>
+    <content type="html"><![CDATA[<p>I&#8217;m a big proponent of <a href="http://www.unblock-us.com/">Unblock Us</a>, a VPN-less solution for using online service that are not available in your country, such as Netflix, Hulu, Pandora etc., in your country. It&#8217;s purely based on DNS, which means it works on all network connected devices and has practically zero performance impacts.</p>
+<p>One thing that always bugged was that one has to reactivate their IP address with Unblock Us whenever it changes, e.g. after rebooting your WiFi router. Previously one had to go to unblock-us.com, wait for the service checker widget to detect that you had a new IP address, and manually reactivate it by clicking a pop-up link. On Google TV this was particularly annoying, since the browsing experience isn&#8217;t exactly great and it was just uncomfortable, since you didn&#8217;t even realize until e.g. Netflix would stop working.</p>
+<p>Long story short, I&#8217;ve written an Android application which does all that for you, automatically. It sits idle on your Android device and will be woken up by the system whenever your network connectivity changes. It will then automatically register with unblock-us.com with the current IP address. This should ensure a seamless viewing / listening experience for Unblock Us supported services.</p>
+<p>The app is tiny, requires merely internet access permissions, and doesn&#8217;t even require a password&#8211;just your email address you used to sign up with Unblock Us. Your email address will be used to send an activation request to unblock-us.com.</p>
+<p>Ideas for new features:</p>
+<ul>
+<li>Provide a region chooser similar to the one on the website</li>
+<li>Provide a service monitor that will notify you about outages of Netflix and other services</li>
+</ul>
+<p><a href="https://play.google.com/store/apps/details?id=com.github.unblockus.manager">Download for free on Google Play</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Why the Google TV SDK lacks an in-app live TV widget]]></title>
+    <link href="http://mttkay.github.com/blog/2012/10/18/why-the-google-tv-sdk-lacks-an-in-app-live-tv-widget/"/>
+    <updated>2012-10-18T00:00:00+02:00</updated>
+    <id>http://mttkay.github.com/blog/2012/10/18/why-the-google-tv-sdk-lacks-an-in-app-live-tv-widget</id>
+    <content type="html"><![CDATA[<p>I have been following Google TV for a while now, and right after its announcement I was pretty excited, pondering the vast amount of opportunities for creating Android apps that would enrich your TV viewing experience.</p>
+<p>That said I was pretty dumbstruck to learn that a PIP (picture-in-picture) component, i.e. an Android view displaying the live TV stream to be embedded in your applications, does not exist (or more precisely: is not available for you to use.) In other words, the most obvious and powerful use case for an Android based TV platform, namely building Android applications around a live TV signal, is not possible to realize. Quoting from the documentation [1]:</p>
+<p class="note" style="margin: 0px 0px 1.5em; padding: 6px 8px 6px 10px; border-width: 0px 0px 0px 6px; border-left-style: solid; border-left-color: #999999; font-style: inherit; font-family: inherit; vertical-align: baseline; background-color: #efefef;"><strong>Note:</strong>&nbsp;The picture-in-picture (PIP) feature of the Live TV app is not available to other Android applications. Also, you can&#8217;t run an Android application in the small PIP window.</p>
+<p>&nbsp;</p>
+<p>As puzzling as Google&#8217;s decision to not provide such a component may sound at first, there is actually a very simple explanation for it. After last week&#8217;s DevFest event in Berlin, I had a chance to speak to Google&#8217;s <a href="https://plus.google.com/u/0/108026429364238951323">Matt Gaunt</a>, developer advocate for Google TV in London, about this very issue. Apparently, the lack of a PIP component has purely legal reasons. Think about it: if any Android application would be able to overlay its content over a TV channel, that channel&#8217;s content could easily be compromised and the viewer tricked into believing that the overlaid content is actually part of the show. While this would not be an issue with &#8220;trusted&#8221; services such as, say, a content overlay containing background information for a news show, malicious apps could easily exploit this to misrepresent or otherwise distort the content aired by the TV channel.</p>
+<p>Hence, to make this happen, Google would have to ask every single TV channel in the world for permission&nbsp;to allow content being overlaid by third party apps. You can easily see how unlikely this will ever be to happen, since Fox News is probably not interested in apps waving an Obama flag in front of their channel logo, to name one example.</p>
+<p>For now, unfortunately, Google TV remains a mere TV-or-apps experience, not both.</p>
+<p>[1]&nbsp;<a href="https://developers.google.com/tv/android/docs/gtv_android?hl=en#HardwareFeatures">https://developers.google.com/tv/android/docs/gtv_android?hl=en#HardwareFeatures</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Android's new build system: Good times guaranteed.]]></title>
+    <link href="http://mttkay.github.com/blog/2012/10/15/android-s-new-build-system-good-times-guaranteed-/"/>
+    <updated>2012-10-15T00:00:00+02:00</updated>
+    <id>http://mttkay.github.com/blog/2012/10/15/android-s-new-build-system-good-times-guaranteed-</id>
+    <content type="html"><![CDATA[<p>As of now, most of you probably heard that Google is abandoning Ant and is moving to a <a href="http://tools.android.com/tech-docs/new-build-system">new, modern build system</a> based on the excellent Gradle build system. I have been a big fan of Gradle for some time now, and tried promoting and working on its Android features in my spare time (as part of <a href="https://github.com/jvoegele/gradle-android-plugin">gradle-android-plugin</a>), so this comes as fantastic news to me.</p>
+<p>One thing I was worried about is that with a big change like this, the de facto standard for building, packaging and distributing Android library projects as created and promoted by the great guys behind <a href="http://code.google.com/p/maven-android-plugin/">android-maven-plugin</a>, i.e. the apklib artifact kind, would now become obsolete shortly after it had turned out so successful. Keep in mind that all work on Maven related features was and is entirely community driven, and not directly supported by Google.</p>
+<p>However, android-maven-plugin&#8217;s Manfred Moser just <a href="https://groups.google.com/forum/?pli=1#!topic/maven-android-developers/lQCMRKInuyk">clarified on the developer mailing list</a> that in fact they had been working together with both Xavier Ducrohet (the Google SDK tools lead) and Hans Dockter (founder of Gradle and Gradleware&#8217;s CEO) to streamline their efforts. Here&#8217;s what will happen:</p>
+<ul>
+<li>Programmatic access to SDK tools functionality will be provided by an open-source library built and maintained by Google, and will be available on Maven Central</li>
+<li>The former apklib artifact type will be improved upon and renamed to .aar (Android Archive), in the spirit of Java&#8217;s JAR and WAR types</li>
+</ul>
+<p>The Maven Android plugin will start supporting this new format in the forthcoming releases.</p>
+<p>Now what does all this mean for developers? It means mostly two things: First, with Google&#8217;s move to Gradle, there will be an excellent build system available out of the box with all the neat features Gradle provides, such as exposing a nice DSL using the Groovy programming language, dependency management via Ivy, plugin support, etc. pp. Second, no one using Maven now to build their Android apps will have to make the switch: android-maven-plugin will continue to work and co-exist, and even better, it will be a symbiotic co-existence between the two systems.</p>
+<p>If you want to get a 5 minute head start into Gradle for Android, have a look at my slide deck <a href="http://www.slideshare.net/matthiaskaeppler/hands-on-the-gradle">&#8220;Hands on the Gradle&#8221;</a>.</p>
+<p>Good times guaranteed!</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Testing whether an application is installed on the SD card]]></title>
+    <link href="http://mttkay.github.com/blog/2012/10/08/testing-whether-an-application-is-installed-on-the-sd-card/"/>
+    <updated>2012-10-08T00:00:00+02:00</updated>
+    <id>http://mttkay.github.com/blog/2012/10/08/testing-whether-an-application-is-installed-on-the-sd-card</id>
+    <content type="html"><![CDATA[<p>Here&#8217;s a little code snippet that can be very useful whenever you have to deal with broadcast intents: it checks whether an application is installed on SD card. The reason why this is useful in combination with broadcast receivers is that apps installed to external storage will simply not receive all broadcasts (for instance, BOOT_COMPLETED cannot be received by apps on SD.)</p>
+<p>To test whether an app is installed on external storage, do this:</p>
+<p><script src="https://gist.github.com/3851440.js"></script></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[ignition 0.2 released]]></title>
+    <link href="http://mttkay.github.com/blog/2012/04/20/ignition-0-2-released/"/>
+    <updated>2012-04-20T00:00:00+02:00</updated>
+    <id>http://mttkay.github.com/blog/2012/04/20/ignition-0-2-released</id>
+    <content type="html"><![CDATA[<p>We&#8217;ve just released version 0.2 of our ignition utility library for Android.</p>
+<p>Don&#8217;t know which benefits ignition brings to the table? Read about it <a href="http://androitism.posterous.com/ignition-01-is-here">here</a>.</p>
+<p><strong><span style="font-size: large;">What&#8217;s new?</span></strong></p>
+<p>We&#8217;ve worked a lot on improving IgnitedAsyncTask and IgnitedLocationManager, pushed many bug fixes, and restructured the samples apps. We&#8217;ve also added a sample for EndlessListAdapter for your convenience.</p>
+<p>Read the <a href="https://github.com/mttkay/ignition/wiki/Changelog">full changelog here</a>.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[ignition 0.1 is here]]></title>
+    <link href="http://mttkay.github.com/blog/2012/03/09/ignition-0-1-is-here/"/>
+    <updated>2012-03-09T00:00:00+01:00</updated>
+    <id>http://mttkay.github.com/blog/2012/03/09/ignition-0-1-is-here</id>
+    <content type="html"><![CDATA[<p>Today it&#8217;s &#8220;Fun Friday&#8221; (10% time)&nbsp;at Qype, so we thought this would be a good opportunity to release the first version of our <a href="https://github.com/mttkay/ignition">ignition</a> library for Android!</p>
+<p>What&#8217;s ignition? In short, it&#8217;s a rewrite of <a href="https://github.com/mttkay/droid-fu">Droid-Fu</a>. What is Droid-Fu? It was an attempt to create a utility library for Android that makes your life easier by creating add-ons and wrappers for the Android framework classes that are just a little friendler to use. Our approach with Droid-Fu was to pull all the helper code and boilerplate we wrote for our Qype app into a reusable library, but we did a poor job at maintaining it. We didn&#8217;t have proper release and issue management in place and since I was short of spare time (not least due to my work on <a href="http://brainflush.wordpress.com/2011/10/31/our-android-book-android-in-practice-is-here/">Android in Practice</a>), it just never happened. We soon&nbsp;had many issues filed, but it was virtually impossible for us to backtrack through all the snapshot versions to find out which one it was actually affecting.</p>
+<p>Moreover, we did mistakes with Droid-Fu&#8217;s API design, and we wanted to have a chance of fixing these without horribly breaking all the apps that used it. Yes, we could have done a &#8220;Droid-Fu 2.0&#8221; (even though there never even was a 1.0) or a &#8220;Droid-Fu NG&#8221;, but I felt the least intrusive way would be to start out fresh as morning dew.</p>
+<p>The fruit of this labor is ignition, and I believe we improved things a lot. First, here&#8217;s what ignition has to offer in the first place:</p>
+<p><span style="font-size: large;">Cross-cutting stuff</span></p>
+<ul>
+<li>helper classes for dealing with Intents, dialogs, device screens, etc.</li>
+<li>an improved version of AsyncTask (<a href="http://mttkay.github.com/ignition-docs/ignition-core/apidocs/com/github/ignition/core/tasks/IgnitedAsyncTask.html">IgnitedAsyncTask</a>) which makes it a lot easier to deal with the following things:    
+<ul>
+<li>task life-cycle: there are onStart, onComplete, onSuccess, and onError callbacks</li>
+<li>yes, your task may now raise exceptions while running</li>
+<li>all callbacks are guaranteed to be passed a valid Context object, so that you can immediately update the UI (those must be bound and unbound using connect/disconnect to avoid memory leaks!)</li>
+<li>re-use task logic from pre- and post-execute handlers by being able to bind to different callables that execute the actual job logic</li>
+</ul>
+</li>
+<li><a href="http://mttkay.github.com/ignition-docs/ignition-core/apidocs/com/github/ignition/core/adapters/EndlessListAdapter.html">EndlessListAdapter</a> can be used to implement lists that fetch more content when reaching the bottom of the list</li>
+</ul>
+<p><span style="font-size: large;">Dealing with remote images</span></p>
+<ul>
+<li><a href="http://mttkay.github.com/ignition-docs/ignition-core/apidocs/com/github/ignition/core/widgets/RemoteImageView.html">RemoteImageView</a> is a drop-in replacement for ImageView which can download its image resource from the Web and show a progress spinner in the mean time</li>
+<li>if you&#8217;re showing a whole bunch of these, you can use <a href="http://mttkay.github.com/ignition-docs/ignition-core/apidocs/com/github/ignition/core/adapters/RemoteImageGalleryAdapter.html">RemoteImageGalleryAdapter</a> which will feed RemoteImageViews into an Android gallery widget</li>
+<li>both are backed by <a href="http://mttkay.github.com/ignition-docs/ignition-support/apidocs/com/github/ignition/support/images/remote/RemoteImageLoader.html">RemoteImageLoader</a>, which can be used independently to download images drawable into ImageViews asynchronously. We use this to download thumbnail images for list elements in ListViews on the fly.</li>
+<li>all this in turn is backed by <a href="http://mttkay.github.com/ignition-docs/ignition-support/apidocs/com/github/ignition/support/cache/ImageCache.html">ImageCache</a>, a 2-level cache which is able to cache to both internal storage and SD card, therefore minimizing network traffic when dealing with lots of data (as is the case with images)</li>
+</ul>
+<p><span style="font-size: large;">Dealing with HTTP requests and network failures</span></p>
+<ul>
+<li>speaking of caching, you can not only cache image data, but also HTTP responses using <a href="http://mttkay.github.com/ignition-docs/ignition-support/apidocs/com/github/ignition/support/http/cache/HttpResponseCache.html">HttpResponseCache</a></li>
+<li>better yet, <a href="http://mttkay.github.com/ignition-docs/ignition-support/apidocs/com/github/ignition/support/http/IgnitedHttp.html">IgnitedHttp</a> is an abstraction of Android&#8217;s Apache HttpClient that exposes a simple DSL to build and send HTTP requests, like so:    
+<ul>
+<li>new IgnitedHttp().get(&#8220;http://example.com&#8221;).expecting(200, 404).retries(3).withTimeout(5000).send();</li>
+</ul>
+</li>
+<li>it integrates with the response cache by setting a single flag</li>
+<li>it will enable GZip uncompression of response data with a single flag</li>
+<li>it will register a BroadcastReceiver which listens for changes in network configuration and automatically update e.g. proxy settings for you (this can be a major source of error in your app for users who must go through carrier proxies on 3G and then fail over from or to Wi-Fi)</li>
+<li>it has a more robust request-retry logic than the standard HttpClient does</li>
+</ul>
+<p><span style="font-size: large;">Dealing with location</span></p>
+<p>Stefano has build a fantastic new way of dealing with location on Android. It takes all the cruft out of your Activities and hides it in a single annotation you drop onto an Activity. It will then automagically inject location fixes into a prepared field, using the power of AspectJ. <a href="http://mod3rn-android-coding.posterous.com/ignition-v01-ignited-way-of-doing-location">Read more about it on his blog</a>.</p>
+<p><span style="font-size: large;">What&#8217;s different to Droid-Fu?</span></p>
+<p>Except for the location module, all of this has existed in Droid-Fu. As I mentioned before, the motivation behind iginition was not to build a new library, but re-launch what worked well for us in a more maintainable and less intrusive way. Here&#8217;s what changed:</p>
+<ul>
+<li>The project is now split into multiple modules, so you can decide which ones you&#8217;d like to link. This makes the whole thing less monolithic, and for instance doesn&#8217;t force the Maps dependency on you if you do not want to use the location stuff</li>
+<li>The project is less intrusive. You do not have to inherit from BetterApplication, BetterActivity or BetterService anymore (these classes have been removed). This was done as to make ignition integrate seamlessly with other libraries like <a href="http://code.google.com/p/roboguice/">Roboguice</a>. We felt that ignition was not supposed to be a framework: it should be an all-opt-in solution.</li>
+<li>The API has received a major cleanup. Things have been renamed, restructured, and generally made more consistent.</li>
+</ul>
+<p>Where can I get more information?</p>
+<p>It&#8217;s <a href="https://github.com/mttkay/ignition">all on GitHub</a> right now, but here are some quick links to useful stuff:</p>
+<ul>
+<li><a href="https://github.com/mttkay/ignition/wiki/Installation-and-setup">installation / usage guide</a></li>
+<li><a href="https://github.com/mttkay/ignition/wiki/Sample-applications">sample projects</a></li>
+</ul>
+<p>Thanks again for everyone who contributed issue report and fixes! We promise we&#8217;ll do more regular updates with this library.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Getting to grips with the Android 4.0.3 Social APIs]]></title>
+    <link href="http://mttkay.github.com/blog/2012/03/03/getting-to-grips-with-the-android-4-0-3-social-apis/"/>
+    <updated>2012-03-03T00:00:00+01:00</updated>
+    <id>http://mttkay.github.com/blog/2012/03/03/getting-to-grips-with-the-android-4-0-3-social-apis</id>
+    <content type="html"><![CDATA[<ul>
+</ul>
+<p>This post also appears on&nbsp;<a href="http://engineering.qype.com/" target="_blank">engineering.qype.com</a>.</p>
+<p>We recently started getting our hands onto some of the shiny new Ice Cream Sandwich APIs, particularly Beam and the <a href="http://android-developers.blogspot.com/2012/02/new-social-apis-in-android-ics.html">social stream API</a> that was introduced with Android 4.0.3. Integration turned out to be a little harder than we expected, mostly due to two things: code verbosity (you&#8217;ll write a lot of boilerplate) and undocumented pitfalls. With this post I&#8217;d like to shed some light on a few things that bit us when developing with the new APIs.</p>
+<p><span style="font-size: x-large;">Integrating with the social stream</span></p>
+<p>First of all, you should know that to get going with the social stream, you will have to go through two major steps:</p>
+<ol>
+<li>Publish your app as an account provider, and log in your users via the <a href="http://developer.android.com/reference/android/accounts/AccountManager.html">AccountManager</a> API, so that contacts from your service can be synced with the Android address book (now called the People app in ICS)</li>
+<li>Once your contacts are synced with the People app, import their status updates into the &#8220;Recent Updates&#8221; feed</li>
+</ol>
+<p>I won&#8217;t talk&nbsp;about 1. There are two excellent blog posts on how to deal with <a href="http://www.c99.org/2010/01/23/writing-an-android-sync-provider-part-1/">connecting accounts</a> and <a href="http://www.c99.org/2010/01/23/writing-an-android-sync-provider-part-2/">syncing contacts</a> respectively, plus the SampleSyncAdapter app that is shipped with the SDK ApiDemos. Once you&#8217;re there, adding support for publishing a user&#8217;s social feed is generally quite simple. From here on I assume that you have read all the documentation that is available, since I want to focus on the difficult parts. Let&#8217;s have a look at the final product first.</p>
+<p>[[posterous-content:yFlmybGeCDDFFbADcDyf]]</p>
+<p>Let&#8217;s quickly recap when the &#8220;Recent Updates&#8221; pane appears. It becomes available whenever there are status updates from the contact you&#8217;re looking at that are no older than a few days (I believe it&#8217;s five days, but I haven&#8217;t exactly checked that). There is also a threshold for how many items will ever show up at the same time, and as pointed out in the docs, this threshold is platform or even device specific.</p>
+<p>There are two ways to import these status updates from your service: <em>eagerly</em>, as part of the contacts sync (i.e. in your contacts SyncAdapter), or <em>lazily</em>, via an Intent that is fired whenever a user looks at another user&#8217;s profile. Again, the general mechanics behind this are outlined on the <a href="http://android-developers.blogspot.com/2012/02/new-social-apis-in-android-ics.html">Android dev blog</a>.</p>
+<p>Generally, you don&#8217;t want to fetch status updates (plus images) for a hundred or more contacts as part of the sync, since it&#8217;s very unlikely that a user would look at all of them to see their status updates. I say &#8220;plus images&#8221;, because you will have to download them synchronously and either insert them in binary form into the <a href="http://developer.android.com/reference/android/provider/ContactsContract.StreamItemPhotos.html">StreamItemPhotos</a> table, or write them to disk using an <a href="http://developer.android.com/reference/android/content/res/AssetFileDescriptor.html">AssetFileDescriptor</a>. Since ICS devices often have high resolution displays, you want to download high res images, so that&#8217;s a lot of data you&#8217;re pushing over the wire, keep that in mind.</p>
+<p>Hence, you most likely want to go down the callback route, perhaps with optionally pre-populating important contacts with their status updates during contacts sync (what important means depends on your service, but you could for instance check if the user has starred a contact, and prefetch status updates accordingly).</p>
+<p>Regardless for which sync strategy you settle (lazy or pre-fetched or hybrid), here are a few things that bit me while syncing social stream items.<!--more--></p>
+<p><span style="font-size: x-large;">Security exceptions</span></p>
+<p>One thing that I kept stumbling into was security exceptions being raised even though I asked for all necessary permissions in the Android Manifest. It took me a while to figure out why that was happening, since these checks were not mentioned in the docs. Two specific situations were I encountered these were:</p>
+<ol>
+<li>Opening a single stream item in an Activity that is part of your application. You almost always want to do this, as it allows you to have a &#8220;detail view&#8221; for every type of stream item you publish.</li>
+<li>Reading back photo stream items when opening the social stream. Recall that there are two different kinds of stream items: ordinary stream items, and photo stream items. Both are kept in separate tables.</li>
+</ol>
+<p>I&#8217;ll address both points briefly now.</p>
+<ol> </ol>
+<p><span style="font-size: large;">Resolving security exceptions for viewStreamItemActivity</span></p>
+<p>The docs mention that you can register an Activity that will handle taps on a stream item to get a detailed view. This Activity is registered in contacts.xml via the viewStreamItemActivity attribute. For instance, if on our service (Qype) a user writes a review, and we then publish this action to the social stream, then clicking the stream item in the People app will open the review Activity in our app.&nbsp;However, it is undocumented how the Intent is formed that the Android People app will emit in order to launch this Activity, and as a matter of fact, if you declare this Activity without specifying a proper Intent filter, it will crash with a security exception. Without further ado, here&#8217;s the Intent filter you will have to specifiy in order for that Activity to work:</p>
+<p><script src="https://gist.github.com/1868888.js"></script></p>
+<p>You will notice that the data Uri passed as part of the Intent points to the stream item that is being viewed, so you can parse its ID conveniently using ContentUris.parseId(getIntent().getData()). Moreover, if you have a separate activity to handle photo taps/clicks in stream items (declared via&nbsp;viewStreamItemPhotoActivity), be aware that the data Uri will not point to a StreamItem, but to a StreamItemPhoto, so you will have to change the pathPattern to /stream_items/*/photos/*.</p>
+<p><span style="font-size: large;">Resolving security exceptions when accessing StreamItemPhoto data</span></p>
+<p>The second situation where I was encountering security exceptions was after inserting photos into the StreamItemPhoto table and reading them back when the social stream would be populated. Android complained that the account used to insert the photo records was not matching the one it then used to read them back while building the stream. To resolve this issue, one has to supply the same ACCOUNT_NAME and ACCOUNT_TYPE used to insert the respective stream item to which the photo belongs. So make sure that when inserting a photo item, you include these columns, like so:</p>
+<p><script src="https://gist.github.com/1868951.js"></script></p>
+<p>Unfortunately, this too is not mentioned in the docs.</p>
+<p><!--more--></p>
+<p><span style="font-size: x-large;">Watch out for those timestamps</span></p>
+<p>Another thing that had me scratching my head was the stream item timestamps. First of all, I was expecting that Android would use them to not insert (or at least: not show) feed items that already exist, or that are older than the newest existing item. That is not the case; you will have to do these checks yourself if you want to avoid double insertions. This is a bit annoying, since without these checks, opening a user&#8217;s profile in the people app, then closing and re-opening it will lead to multiple insertions unless you take further action. It would have been nice to get the solution here out of the box.</p>
+<p>The second and more bewildering issue is that timestamps, although used to identify the time since UNIX epoch (as one would expect), are defined in milliseconds, not seconds. Perhaps this was done so as to make it easier to work with Java&#8217;s Date.getTime, since I cannot see why one would need millisecond precision in an activity feed. The problem with using milliseconds is that it can overflow 32 bit integers, which especially on Ruby stacks will give you all sorts of trouble (like swapping over from Fixnum to BigDecimal). So keep that in mind when sending these timestamps to your server as part of the sync.</p>
+<p><span style="font-size: x-large;">Watch out for back compat issues</span></p>
+<p>If you&#8217;re sharing code between your contacts sync and the social stream stuff (which is most likely the case), and if you want the contacts sync to work on pre-Honeycomb installations as well, be careful when accessing the API, since a few changes have been made since even to existing interfaces. One example where I had to put in extra checks for API compatibility was the <a href="http://developer.android.com/reference/android/provider/ContactsContract.GroupsColumns.html#GROUP_IS_READ_ONLY">GROUP_IS_READ_ONLY</a> column when creating a new group for Qype contacts (I suggest you always do that, since the first tab in the people app is the groups tab, and even if you only have one group this helps your data to appear more prominently), since this has been added with Honeycomb.</p>
+<p>Another example is the <a href="http://developer.android.com/reference/android/provider/ContactsContract.DisplayPhoto.html">DisplayPhoto</a>&nbsp;table, which you can use to determine the maximum image size appropriate for the current device. Here you must resort to reflection even, since that class was added with ICS, so you must not reference it explicitly.</p>
+<p>That&#8217;s it so far. Leave me comments if you have corrections or things to add.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[The Signpost OAuth project has an owner again!]]></title>
+    <link href="http://mttkay.github.com/blog/2012/01/27/the-signpost-oauth-project-has-an-owner-again-/"/>
+    <updated>2012-01-27T00:00:00+01:00</updated>
+    <id>http://mttkay.github.com/blog/2012/01/27/the-signpost-oauth-project-has-an-owner-again-</id>
+    <content type="html"><![CDATA[<p>In 2009, I <a href="http://brainflush.wordpress.com/2009/05/03/introducing-signpost-easy-oauth-for-java-and-apache-httpcomponents-android-too/">introduced Signpost</a>, a lightweight, client-side OAuth library for Java. I initially created it to power the API connector in our <a href="https://market.android.com/details?id=com.qype.radar">Qype Android app</a>, and kept maintaining it for a year or two, until I <a href="http://brainflush.wordpress.com/2011/01/27/stepping-back-from-signpost-development/">got bored with fixing random issues</a> with random OAuth service providers that I honestly didn&#8217;t care about whatsoever. In its latest release, the library still works flawlessly for us, so I had little motivation to continue work on it.</p>
+<p>However, I understand that it probably doesn&#8217;t work flawlessly for everyone, so with me backing away from developing it further, a project maintainer was obviously needed. It looks like we&#8217;ve finally found someone who&#8217;s willing to enter the painful world of OAuth 1.0! Meet <a href="http://blog.polysfactory.com/">Takahiro Horikawa</a>, who will take full ownership of the project from here on, managing issues, releases, and the project website.</p>
+<p>If you&#8217;re interested in helping out, give us a shout on <a href="https://groups.google.com/forum/?hl=en#!forum/signpost-dev">signpost-developers</a>!</p>
+<p><a href="http://code.google.com/p/oauth-signpost/">Signpost project page</a></p>
+<p><a href="https://twitter.com/#!/thorikawa">Takahiro&#8217;s Twitter</a></p>
+<p><a href="https://github.com/thorikawa">Takahiro&#8217;s GitHub</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Robolectric: Setting ANDROID_HOME for all tests (MacOS/Eclipse)]]></title>
+    <link href="http://mttkay.github.com/blog/2012/01/21/robolectric-setting-android-home-for-all-tests-macos-eclipse-/"/>
+    <updated>2012-01-21T00:00:00+01:00</updated>
+    <id>http://mttkay.github.com/blog/2012/01/21/robolectric-setting-android-home-for-all-tests-macos-eclipse-</id>
+    <content type="html"><![CDATA[<p>I just stumbled over the somewhat annoying issue that when running <a href="http://pivotal.github.com/robolectric/">Robolectric</a> tests in Eclipse, the library must see the ANDROID_HOME environment variable, or resource lookups in the android namespace will fail (you&#8217;ll see a warning about this on the console).</p>
+<p>Now, you can of course fix that by adding ANDROID_HOME to every single Eclipse Run configuration for your tests, but that would be cumbersome. It would be better to have this variable set for Eclipse so that all Java processes forked from it will inherit it, including your test runs. Unfortunately MacOS X doesn&#8217;t seem to have a straight forward solution to that. I tried modifying Eclipse&#8217;s plist file, to define <a href="http://developer.apple.com/library/mac/#documentation/General/Reference/InfoPlistKeyReference/Articles/LaunchServicesKeys.html#//apple_ref/doc/uid/TP40009250-SW1">LSEnvironment</a>, but that did not have any effect.</p>
+<p>However, what you can do is have all MacOS processes inherit it by <a href="http://www.digitaledgesw.com/node/31">setting it in /etc/launchd.conf</a>. This is somewhat quick and dirty, since you only really need it in Eclipse and Terminal, but it does the job:</p>
+<div class="CodeRay">
+  <div class="code"><pre>$sudo vim /etc/launchd.conf</pre></div>
+</div>
+
+<p>Now add this line:</p>
+<div class="CodeRay">
+  <div class="code"><pre>setenv ANDROID_HOME /path/to/android-sdk</pre></div>
+</div>
+
+<p>Reboot, and rejoice.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Which Screen Am I? No more getting lost in Android screen configurations]]></title>
+    <link href="http://mttkay.github.com/blog/2012/01/11/which-screen-am-i-no-more-getting-lost-in-android-screen-configurations/"/>
+    <updated>2012-01-11T00:00:00+01:00</updated>
+    <id>http://mttkay.github.com/blog/2012/01/11/which-screen-am-i-no-more-getting-lost-in-android-screen-configurations</id>
+    <content type="html"><![CDATA[<p>Are you as puzzled as me when it comes to Android screen classification? According to the official docs, Android puts device screens into buckets, based on two properties: screen size, and pixel density. However, the lines are blurry, it&#8217;s often not clear which exact values are used to put a device in one bucket or the next.</p>
+<p>If you keep pondering the screen class of your device(s), ponder no more. I&#8217;ve built a little app that helps developers decide in which of these buckets your device falls. It&#8217;s called <a href="https://market.android.com/details?id=com.github.kaeppler.whichscreen">Which Screen Am I?</a> and it&#8217;s <a href="https://github.com/kaeppler/WhichScreenAmI">free and open source</a>. This is how it looks on a FroYo emulator that uses the HVGA skin and a medium pixel density:</p>
+<p>[[posterous-content:zvpucdcdirfbBIjfDeHk]]</p>
+<p>If you&#8217;re targeting different screen configurations with different APKs, this takes at least some of the pain out of the testing process.</p>
+<p>GitHub:&nbsp;<a href="https://github.com/kaeppler/WhichScreenAmI">https://github.com/kaeppler/WhichScreenAmI</a></p>
+<p>Android Market (Web):&nbsp;<a href="https://market.android.com/details?id=com.github.kaeppler.whichscreen">https://market.android.com/details?id=com.github.kaeppler.whichscreen</a></p>
+]]></content>
+  </entry>
+  
+</feed>

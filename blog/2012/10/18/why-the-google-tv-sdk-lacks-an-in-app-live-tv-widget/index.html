@@ -1,0 +1,174 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Why the Google TV SDK lacks an in-app live TV widget - mttkay here.</title>
+	<meta name="author" content="Matthias Käppler">
+
+	
+	<meta name="description" content="I have been following Google TV for a while now, and right after its announcement I was pretty excited, pondering the vast amount of opportunities &hellip;">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="mttkay here." type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	
+</head>
+
+<body>
+	<header id="header" class="inner"><h1><a href="/">mttkay here.</a></h1>
+<nav id="main-nav"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</nav>
+<nav id="mobile-nav">
+	<div class="alignleft menu">
+		<a class="button">Menu</a>
+		<div class="container"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</div>
+	</div>
+	<div class="alignright search">
+		<a class="button"></a>
+		<div class="container">
+			<form action="http://google.com/search" method="get">
+				<input type="text" name="q" results="0">
+				<input type="hidden" name="q" value="site:mttkay.github.com">
+			</form>
+		</div>
+	</div>
+</nav>
+<nav id="sub-nav" class="alignright">
+	<div class="social">
+		
+		
+		<a class="google" href="https://plus.google.com/112265135089213955243?rel=author" title="Google+">Google+</a>
+		
+		
+		<a class="twitter" href="http://twitter.com/mttkay" title="Twitter">Twitter</a>
+		
+		
+		<a class="github" href="https://github.com/mttkay" title="GitHub">GitHub</a>
+		
+    
+		
+		
+		
+		
+		
+		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+	<form class="search" action="http://google.com/search" method="get">
+		<input class="alignright" type="text" name="q" results="0">
+		<input type="hidden" name="q" value="site:mttkay.github.com">
+	</form>
+</nav>
+
+</header>
+	
+		
+<div id="banner" class="inner">
+	<div class="container">
+		<ul class="feed"></ul>
+	</div>
+	<small><a href="http://twitter.com/mttkay">mttkay</a> @ <a href="http://twitter.com">Twitter</a></small>
+	<div class="loading">Loading...</div>
+</div>
+<script src="/javascripts/twitter.js"></script>
+<script type="text/javascript">
+	(function($){
+		$('#banner').getTwitterFeed('mttkay', 4, false);
+	})(jQuery);
+</script>
+
+	
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Why the Google TV SDK Lacks an In-app Live TV Widget</h2>
+	<div class="entry-content"><p>I have been following Google TV for a while now, and right after its announcement I was pretty excited, pondering the vast amount of opportunities for creating Android apps that would enrich your TV viewing experience.</p>
+<p>That said I was pretty dumbstruck to learn that a PIP (picture-in-picture) component, i.e. an Android view displaying the live TV stream to be embedded in your applications, does not exist (or more precisely: is not available for you to use.) In other words, the most obvious and powerful use case for an Android based TV platform, namely building Android applications around a live TV signal, is not possible to realize. Quoting from the documentation [1]:</p>
+<p class="note" style="margin: 0px 0px 1.5em; padding: 6px 8px 6px 10px; border-width: 0px 0px 0px 6px; border-left-style: solid; border-left-color: #999999; font-style: inherit; font-family: inherit; vertical-align: baseline; background-color: #efefef;"><strong>Note:</strong>&nbsp;The picture-in-picture (PIP) feature of the Live TV app is not available to other Android applications. Also, you can&#8217;t run an Android application in the small PIP window.</p>
+<p>&nbsp;</p>
+<p>As puzzling as Google&#8217;s decision to not provide such a component may sound at first, there is actually a very simple explanation for it. After last week&#8217;s DevFest event in Berlin, I had a chance to speak to Google&#8217;s <a href="https://plus.google.com/u/0/108026429364238951323">Matt Gaunt</a>, developer advocate for Google TV in London, about this very issue. Apparently, the lack of a PIP component has purely legal reasons. Think about it: if any Android application would be able to overlay its content over a TV channel, that channel&#8217;s content could easily be compromised and the viewer tricked into believing that the overlaid content is actually part of the show. While this would not be an issue with &#8220;trusted&#8221; services such as, say, a content overlay containing background information for a news show, malicious apps could easily exploit this to misrepresent or otherwise distort the content aired by the TV channel.</p>
+<p>Hence, to make this happen, Google would have to ask every single TV channel in the world for permission&nbsp;to allow content being overlaid by third party apps. You can easily see how unlikely this will ever be to happen, since Fox News is probably not interested in apps waving an Obama flag in front of their channel logo, to name one example.</p>
+<p>For now, unfortunately, Google TV remains a mere TV-or-apps experience, not both.</p>
+<p>[1]&nbsp;<a href="https://developers.google.com/tv/android/docs/gtv_android?hl=en#HardwareFeatures">https://developers.google.com/tv/android/docs/gtv_android?hl=en#HardwareFeatures</a></p>
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-18T00:00:00+02:00" pubdate data-updated="true">Oct 18<span>th</span>, 2012</time></div>
+	<div class="tags">
+
+</div>
+	
+</div></article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	<a class="addthis_button_tweet"></a>
+	
+	
+	<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2013
+
+    Matthias Käppler
+
+</footer>
+	<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+
+
+	<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-38754031-1']);
+		_gaq.push(['_trackPageview']);
+
+		(function() {
+			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+	</script>
+
+
+
+</body>
+</html>

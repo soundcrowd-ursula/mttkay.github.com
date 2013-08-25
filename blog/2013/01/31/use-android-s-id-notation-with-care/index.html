@@ -1,0 +1,189 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Use Android's @+id Notation With Care - mttkay here.</title>
+	<meta name="author" content="Matthias Käppler">
+
+	
+	<meta name="description" content="Being sloppy when it comes to managing your application&#8217;s resource IDs can lead to subtle bugs that are difficult to find and debug. Imagine a &hellip;">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="mttkay here." type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	
+</head>
+
+<body>
+	<header id="header" class="inner"><h1><a href="/">mttkay here.</a></h1>
+<nav id="main-nav"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</nav>
+<nav id="mobile-nav">
+	<div class="alignleft menu">
+		<a class="button">Menu</a>
+		<div class="container"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</div>
+	</div>
+	<div class="alignright search">
+		<a class="button"></a>
+		<div class="container">
+			<form action="http://google.com/search" method="get">
+				<input type="text" name="q" results="0">
+				<input type="hidden" name="q" value="site:mttkay.github.com">
+			</form>
+		</div>
+	</div>
+</nav>
+<nav id="sub-nav" class="alignright">
+	<div class="social">
+		
+		
+		<a class="google" href="https://plus.google.com/112265135089213955243?rel=author" title="Google+">Google+</a>
+		
+		
+		<a class="twitter" href="http://twitter.com/mttkay" title="Twitter">Twitter</a>
+		
+		
+		<a class="github" href="https://github.com/mttkay" title="GitHub">GitHub</a>
+		
+    
+		
+		
+		
+		
+		
+		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+	<form class="search" action="http://google.com/search" method="get">
+		<input class="alignright" type="text" name="q" results="0">
+		<input type="hidden" name="q" value="site:mttkay.github.com">
+	</form>
+</nav>
+
+</header>
+	
+		
+<div id="banner" class="inner">
+	<div class="container">
+		<ul class="feed"></ul>
+	</div>
+	<small><a href="http://twitter.com/mttkay">mttkay</a> @ <a href="http://twitter.com">Twitter</a></small>
+	<div class="loading">Loading...</div>
+</div>
+<script src="/javascripts/twitter.js"></script>
+<script type="text/javascript">
+	(function($){
+		$('#banner').getTwitterFeed('mttkay', 4, false);
+	})(jQuery);
+</script>
+
+	
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Use Android's @+id Notation With Care</h2>
+	<div class="entry-content"><p>Being sloppy when it comes to managing your application&#8217;s resource IDs can lead to subtle bugs that are difficult to find and debug. Imagine a scenario where foo_activity.xml holds the layout definition for FooActivity, and you define three different variants for different screen configurations:</p>
+<p style="padding-left: 30px;">res/layout/foo_activity.xml<br />res/layout-land/foo_activity.xml<br />res/layout-sw600dp/foo_activity.xml</p>
+<p>Now, with some certainty these three layouts will share the same views, with the same IDs, just slightly differently styled or arranged. Let&#8217;s furthermore assume in all three layouts, we have a TextView:</p>
+<p><script src="https://gist.github.com/4682037.js"></script></p>
+<p>FooActivity will of course retrieve a reference to this TextView via findViewById:</p>
+<p><script src="https://gist.github.com/4682053.js"></script></p>
+<p>Now what happens if in the main layout file (layout/foo_activity) you change the view&#8217;s ID? You may be surprised to hear that your application will still compile. That&#8217;s because the old view ID, my_text, still exists in R.java, since while now gone from layout/foo_activity.xml, it&#8217;s still (re)created using the @+id notation in the other two layouts, thus continuing to exist in the ID pool. Whenever these layouts are loaded and you reference the new ID from FooActivity, then of course your application will crash.</p>
+<p>The problem here stems from violating the DRY principle: we&#8217;re carelessly repeating the code which creates a resource ID, when ideally, it should only ever be found in one, and only one part of the application. To recall what @+id does, it&#8217;s an idempotent &#8220;create this ID&#8221; action. In other words, if that ID has not been defined yet, it will get defined, otherwise it will be used. So it&#8217;s safe to use this notation multiple times with the same ID, which may be the reason why people overuse it: it looks like a safe bet, when it&#8217;s actually not.</p>
+<p>There are three approaches I have tried to deal with this issue:</p>
+<p><strong><span style="font-size: large;">1 - Pulling view IDs into styles</span></strong></p>
+<p>When redefining views multiple times in different layouts, one approach could be to extract the respective view IDs into a style, then apply the single shared style to all three variants of the view:</p>
+<p><script src="https://gist.github.com/4682862.js"></script></p>
+<p><script src="https://gist.github.com/4683025.js"></script></p>
+<p>While I first favored this, there are several problems with this approach: first, it reduces the visibility of IDs, which can be confusing when dealing with views in RelativeLayout, where you reference views using IDs. Moreover, IntelliJ IDEA at least will get terribly confused and issue an error, since it doesn&#8217;t resolve styles to inspect the correctness of a layout file (it&#8217;ll assume the view is missing the ID attribute.) Lastly, and this is purely a style question, one could argue that styles should be concerned with only visual appearance, not structural attributes like IDs.</p>
+<p><strong><span style="font-size: large;">2 - Pulling view IDs into ids.xml</span></strong></p>
+<p>Another option is to pull the shared view IDs into a global resource file, e.g. in res/ids.xml:</p>
+<p><script src="https://gist.github.com/4682090.js"></script></p>
+<p>This will turn the respective view IDs into first class resources themselves, and by extension make them reachable via R.id and in all layout files. Here, too, no @+-notation is required in any layout files anymore. You would define shared IDs in one, and only one location.</p>
+<p>The problems with this approach are similar to 1, but it clears up with the stylistic problem of defining IDs in a style sheet.</p>
+<p><strong><span style="font-size: large;">3 - How We Do It (TM)</span></strong></p>
+<p>We ended up taking a third route, which is one of convention. We&#8217;ve agreed on establishing a rule which says that it&#8217;s fine to use @+id in layouts files, but only use it in the default layout file, i.e. the one located in res/layout. Whenever a layout is overloaded using different configuations, then even for the same views, @id should be used. That way we ensure that there is only a single location where an ID actually gets defined, without taking it completely out of context when working with layout XML. Moreover, changing the view&#8217;s ID will lead to compilation errors, since all overloaded variants now reference a non-existing ID.</p>
+<p>I&#8217;d be interested to hear how everyone else deals with this.&nbsp;</p>
+<p>&nbsp;</p>
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-01-31T00:00:00+01:00" pubdate data-updated="true">Jan 31<span>st</span>, 2013</time></div>
+	<div class="tags">
+
+</div>
+	
+</div></article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	<a class="addthis_button_tweet"></a>
+	
+	
+	<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2013
+
+    Matthias Käppler
+
+</footer>
+	<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+
+
+	<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-38754031-1']);
+		_gaq.push(['_trackPageview']);
+
+		(function() {
+			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+	</script>
+
+
+
+</body>
+</html>
