@@ -4,7 +4,7 @@
   <title><![CDATA[mttkay here.]]></title>
   <link href="http://mttkay.github.com/atom.xml" rel="self"/>
   <link href="http://mttkay.github.com/"/>
-  <updated>2013-03-03T23:23:02+01:00</updated>
+  <updated>2013-08-25T22:04:36+02:00</updated>
   <id>http://mttkay.github.com/</id>
   <author>
     <name><![CDATA[Matthias Käppler]]></name>
@@ -12,6 +12,428 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Functional Reactive Programming on Android with RxJava]]></title>
+    <link href="http://mttkay.github.com/blog/2013/08/25/functional-reactive-programming-on-android-with-rxjava/"/>
+    <updated>2013-08-25T09:05:00+02:00</updated>
+    <id>http://mttkay.github.com/blog/2013/08/25/functional-reactive-programming-on-android-with-rxjava</id>
+    <content type="html"><![CDATA[<p>If you&#8217;re an app developer, there are two facts about your daily life that
+can only be described as an inconvenient truth:</p>
+
+<ol>
+<li>Modern applications are inherently concurrent.</li>
+<li>Writing concurrent programs (that are correct) is hard.</li>
+</ol>
+
+
+<p>There are good reasons for both of these points. In the domain of mobile or desktop applications,
+parallel execution allows for responsive user interfaces, since we can move
+computations into the background while leaving the UI responding to ongoing
+user interaction. We have to deal with the fact that code must execute concurrently
+in order to not break with this fundamental requirement.
+Moreover, writing such programs
+is hard, since at least on mobile, they are typically written in imperative
+languages like C or Java. The reason why writing concurrent code in imperative
+languages is hard is because code is written it in terms of interweaved
+temporal instructions that move objects
+or data structures from one state to another. This imperative style of programming
+is inherently bound to producing side effects, and gives rises to a number of problems when running these
+instructions in parallel, such as race conditions when writing to a shared resource.</p>
+
+<h1>Resistance is futile&#8211;or is it?</h1>
+
+<p>It&#8217;s almost awkward how accustomed developers have grown to the drawbacks of
+expressing concurrency using imperative languages. I have myself taken it for a
+fact, an inconvenient truth: on platforms like Android where Java is (still) the
+dominant language, concurrency simply sucks, and we should just give in and deal with it.
+I personally keep a close eye on what&#8217;s happening on the other end of the spectrum
+though, i.e. the server side, and it so happens that over the past few years,
+functional programming has made an astounding comeback. I mean astounding as in
+incredible in terms of rate of adoption and innovation. This has many reasons which
+I won&#8217;t get into here, but in the case of concurrency, functional programming has
+a very simple answer to dealing with shared state: don&#8217;t have it.</p>
+
+<p>Let&#8217;s have a quick look at the status quo of concurrency in Android, and what
+the problems are.</p>
+
+<h2>Problems of concurrent programming with AsyncTask</h2>
+
+<p>Being based on Java, Android comes with your standard share of Java concurrency
+primitives, such as <code>Thread</code>s and <code>Future</code>s. Needless to say, these tools, while making
+it easy to perform simple asynchronous tasks, are fairly low level and require
+a substantial amount of diligence when used to model complex
+interactions between concurrent objects. One very frequent use case on Android
+(and any UI driven application for that matter) is to perform a background job
+and then update the UI with the result of the operation. Android gives us <code>AsyncTask</code>
+for exactly that, and it&#8217;s used somewhat like this:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">class</span> <span class="nc">DownloadTask</span> <span class="kd">extends</span> <span class="n">AsyncTask</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">Void</span><span class="o">,</span> <span class="n">File</span><span class="o">&gt;</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">protected</span> <span class="n">File</span> <span class="nf">doInBackground</span><span class="o">(</span><span class="n">String</span><span class="o">...</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">final</span> <span class="n">String</span> <span class="n">url</span> <span class="o">=</span> <span class="n">args</span><span class="o">[</span><span class="mi">0</span><span class="o">];</span>
+</span><span class='line'>    <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kt">byte</span><span class="o">[]</span> <span class="n">fileContent</span> <span class="o">=</span> <span class="n">downloadFile</span><span class="o">(</span><span class="n">url</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">File</span> <span class="n">file</span> <span class="o">=</span> <span class="n">writeToFile</span><span class="o">(</span><span class="n">fileContent</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">file</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="c1">// ???</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">onPostExecute</span><span class="o">(</span><span class="n">File</span> <span class="n">file</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Context</span> <span class="n">context</span> <span class="o">=</span> <span class="n">getContext</span><span class="o">();</span> <span class="c1">// ???</span>
+</span><span class='line'>    <span class="n">Toast</span><span class="o">.</span><span class="na">makeText</span><span class="o">(</span><span class="n">context</span><span class="o">,</span>
+</span><span class='line'>        <span class="s">&quot;Downloaded: &quot;</span> <span class="o">+</span> <span class="n">file</span><span class="o">.</span><span class="na">getAbsolutePath</span><span class="o">(),</span>
+</span><span class='line'>        <span class="n">Toast</span><span class="o">.</span><span class="na">LENGTH_SHORT</span><span class="o">)</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">show</span><span class="o">();</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This looks straight forward. We define a method <code>doInBackground</code> which accepts
+something through its formal parameters, and returns something as the result
+of the operation. Android guarantees us that this code will execute in a thread
+that&#8217;s not the main user interface thread. We also define a UI callback called
+<code>onPostExecute</code>, which receives the result of the computation and can consume
+it on the main UI thread, since Android guarantees that this method will always
+be invoked on the main thread. So far so good. What&#8217;s wrong with this picture?</p>
+
+<h3>In search for those jigsaw pieces</h3>
+
+<p>Quite a few things as it turns out. Let&#8217;s start with <code>doInBackground</code>. As you
+can see we download a file here, a costly operation since it involves network and disk I/O.
+There&#8217;s about a hundred things that can go wrong here, so we surely want to
+recover from errors, and add a try-catch block. Just what do we do in the catch
+block? Log the error? That&#8217;s good and fine, but perhaps we may want to inform
+the user about this error too, which likely involves interacting with the UI, but
+wait, we can&#8217;t do that sine we&#8217;re not allowed to update user interface elements
+from a background thread. Bummer.</p>
+
+<p>Surely it should be easy to handle that error in <code>onPostExecute</code> then.
+We might reason that it&#8217;s as simple as holding on to the exception in a private
+field (i.e. we write it on the background thread), and check in <code>onPostExecute</code>
+(i.e. read it on the UI thread) if that field is set to something other than
+null (did I mention we love null checks) and display it to the user in some way
+shape or form. (The observant reader at this point notes that text in parens
+equals: subtle problems ahead.) But wait, how do we obtain a reference to a
+<code>Context</code>, without which we cannot do anything meaningful with the UI? Apparently
+we have to bind it to the task instance up front, at the point of instantiation,
+and keep a reference to it throughout the task execution. But what if the download
+takes a minute to run? Do we want to hold on to e.g. an <code>Activity</code> instance
+for an entire minute? What if the user decides to back out of the Activity which
+triggered the task, and we&#8217;re now holding on to a stale reference, which not only
+creates a substantial memory leak, but also isn&#8217;t worth a dime, since it
+has meanwhile been detached from the application window? A problem that, as <a href="https://www.google.de/search?q=asynctask+configuration+change">a
+simple Google search suggests</a>, everyone is well aware of.</p>
+
+<h3>Beyond the basics</h3>
+
+<p>Without wanting to beat horses that are already dead, there are other problems
+with all this. The task above is incredibly simple. Picture more complicated
+scenarios where we need to orchestrate a number of such operations. We might
+for instance want to fetch some JSON from a service API, parse it, map it,
+filter it, cache it to disk, and only then feed the result to the UI. All
+the operations just mentioned should&#8211;as per the single responsibility principle&#8211;exist
+as separate objects, perhaps exposed through different services. Composing
+these using <code>AsyncTask</code> is difficult and non-intuitive, since it requires
+grouping any number of combinations of service interactions into separate task
+classes, resulting in a proliferation of&#8211;from the perspective of your business
+logic&#8211;meaningless task classes.</p>
+
+<p>Another option would be to have one task class per service object invocation, or
+have the service objects themselves wrap their code in <code>AsyncTasks</code>. This then
+means that composing service objects means nesting <code>AsyncTask</code>, leading to what&#8217;s
+commonly called the &#8220;callback hell&#8221;, since you start tasks from a task callback
+from a task callback from&#8230; you get the idea.</p>
+
+<p>Last, but not least, <code>AsyncTask</code>s scheduling behavior varies significantly across
+different versions of Android. I believe I have seen it changing from a capped
+thread pool back in the 1.x days (with varying bounds depending again on the API level)
+to a <em>single thread executor</em> model in 4.x. Read that again: your tasks (plural)
+do <em>not</em> run concurrently to each other on ICS devices and beyond (although they do run
+concurrently to the main UI thread). Why did GOOG decide to serialize task execution?
+For the same reason I&#8217;m writing this post. Developers simply couldn&#8217;t get it right,
+applications suffered from nasty problems due to race conditions and incorrectly
+synchronized code.</p>
+
+<h3>The inconvenient truth</h3>
+
+<p>So, should we still use <code>Thread</code> and <code>AsyncTask</code>?</p>
+
+<p>The answer is: probably. For very simple, one-shot jobs that do not require
+much orchestration, <code>AsyncTask</code> is fine. For anything beyond that:
+it&#8217;s doable, but it requires juggling with <code>volatile</code>s, <code>WeakReference</code>s,
+<code>null</code> checks, and other <a href="http://devblog.avdi.org/2012/06/05/confident-ruby-beta/">defensive, unconfident mechanisms</a>,
+but perhaps worst of all, it requires us to
+think about things that have nothing to do with the problem we set out to solve:
+downloading a file.</p>
+
+<h1>Enter RxJava&#8211;now with more Android</h1>
+
+<p>To come back to the initial problem statement: do we have to give in to the lack
+of high level abstractions and deal with it, or are there better solutions? Turns
+out that as initially hinted at, functional programming might have an answer to
+this. &#8220;But wait&#8221; you might say, &#8220;I still want to use Java?&#8221;. Turns out: yes we can.
+It&#8217;s not super pretty (at least not unless Google whip out their magic wand and
+give us Java 8 and closures on Dalvik, or unless you feel attracted to anonymous classes and
+six levels of identation), but it happens to solve all of the above problems in
+one fell swoop. To summarize again what these problems were:</p>
+
+<ul>
+<li>No standard mechanism to recover from errors</li>
+<li>Lack of control over thread scheduling (unless you like to dig deep)</li>
+<li>No obvious way to compose asynchronous operations</li>
+<li>No obvious and hassle free way of attaching to <code>Context</code></li>
+</ul>
+
+
+<p><a href="https://github.com/Netflix/RxJava">RxJava</a> is an implementation of the Reactive Extensions (Rx)
+on the JVM, courtesy of Netflix. Rx was first conceived by Erik Meijer
+on the Microsoft .NET platform, as a way of combining data or event streams with
+reactive data structures and functional composition. In Rx, events are modeled
+as observable streams, to which observers are subscribed. These streams, or observables
+for short, can be filtered, transformed and composed in various ways before its
+results are emitted to an observer. Every observer is defined over three simple messages:
+<code>onNext</code>, <code>onCompleted</code>, and <code>onError</code>. Concurrency is a variable in this equation,
+and abstracted away in the form of schedulers. Generally, every observable stream
+exposes an interface that is modeled around concurrent execution flows (i.e. you don&#8217;t
+call it, you subscribe to it), but by default is executed synchronously. Introducing
+schedulers can then make an observable execute using various concurrency primitives
+such as threads, thread pools, or even Scala actors. Here&#8217;s an example:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Subscription</span> <span class="n">sub</span> <span class="o">=</span> <span class="n">Observable</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">,</span> <span class="mi">5</span><span class="o">)</span>
+</span><span class='line'>    <span class="o">.</span><span class="na">subscribeOn</span><span class="o">(</span><span class="n">Schedulers</span><span class="o">.</span><span class="na">newThread</span><span class="o">())</span>
+</span><span class='line'>    <span class="o">.</span><span class="na">observeOn</span><span class="o">(</span><span class="n">AndroidSchedulers</span><span class="o">.</span><span class="na">mainThread</span><span class="o">())</span>
+</span><span class='line'>    <span class="o">.</span><span class="na">subscribe</span><span class="o">(</span><span class="n">observer</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// ...</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">sub</span><span class="o">.</span><span class="na">unsubscribe</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This creates a new observable stream from the given list of integers, and emits
+them one after another on the given observer. The use of <code>subscribeOn</code> and <code>observeOn</code>
+configures the stream to emit the numbers on a new <code>Thread</code>, and receive them on
+the Android main UI thread (i.e. the observer&#8217;s <code>onNext</code> method is called on the main thread.)
+Eventually, we also unsubscribe from the observable.</p>
+
+<p>Here&#8217;s a possible <code>Observer</code> implementation:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">IntObserver</span> <span class="kd">implements</span> <span class="n">Observer</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onNext</span><span class="o">(</span><span class="n">Integer</span> <span class="n">value</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>     <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;received: &quot;</span> <span class="o">+</span> <span class="n">value</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// onCompleted and onError omitted</span>
+</span><span class='line'>  <span class="o">...</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now this is not a very interesting example. Let&#8217;s have a look at how we might implement
+the download task as an Rx <code>Observable</code>.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">private</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">File</span><span class="o">&gt;</span> <span class="nf">downloadFileObservable</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">Observable</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="k">new</span> <span class="n">Func1</span><span class="o">&lt;</span><span class="n">Observer</span><span class="o">&lt;</span><span class="n">File</span><span class="o">&gt;,</span> <span class="n">Subscription</span><span class="o">&gt;()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="nd">@Override</span>
+</span><span class='line'>        <span class="kd">public</span> <span class="n">Subscription</span> <span class="nf">call</span><span class="o">(</span><span class="n">Observer</span><span class="o">&lt;</span><span class="n">File</span><span class="o">&gt;</span> <span class="n">fileObserver</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>                <span class="kt">byte</span><span class="o">[]</span> <span class="n">fileContent</span> <span class="o">=</span> <span class="n">downloadFile</span><span class="o">();</span>
+</span><span class='line'>                <span class="n">File</span> <span class="n">file</span> <span class="o">=</span> <span class="n">writeToFile</span><span class="o">(</span><span class="n">fileContent</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">fileObserver</span><span class="o">.</span><span class="na">onNext</span><span class="o">(</span><span class="n">file</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">fileObserver</span><span class="o">.</span><span class="na">onCompleted</span><span class="o">();</span>
+</span><span class='line'>            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">fileObserver</span><span class="o">.</span><span class="na">onError</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">Subscriptions</span><span class="o">.</span><span class="na">empty</span><span class="o">();</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">});</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>What we do here is create a method which builds an <code>Observable</code> &#8220;stream&#8221; (in our case emitting
+only ever a single item, the file), to which a <code>File</code> observer can connect. Whenever
+this observable is subscribed to, its <code>call</code> function will trigger and execute the task at hand.
+If the task can be carried out successfully, we deliver the result to the observer through <code>onNext</code>,
+so it can properly react to it. We then signal completion through <code>onCompleted</code>. If an exception
+is raised, we deliver it to the observer through <code>onError</code>. Here is how you use this
+from, say, a <code>Fragment</code>:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">class</span> <span class="nc">MyFragment</span> <span class="kd">extends</span> <span class="n">Fragment</span> <span class="kd">implements</span> <span class="n">Observer</span><span class="o">&lt;</span><span class="n">File</span><span class="o">&gt;</span> <span class="o">{</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">Subscription</span> <span class="n">subscription</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">onCreate</span><span class="o">(</span><span class="n">Bundle</span> <span class="n">savedInstanceState</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">subscription</span> <span class="o">=</span> <span class="n">downloadFileObservable</span><span class="o">()</span>
+</span><span class='line'>                          <span class="o">.</span><span class="na">subscribeOn</span><span class="o">(</span><span class="n">Schedulers</span><span class="o">.</span><span class="na">newThread</span><span class="o">())</span>
+</span><span class='line'>                          <span class="o">.</span><span class="na">observeOn</span><span class="o">(</span><span class="n">AndroidSchedulers</span><span class="o">.</span><span class="na">mainThread</span><span class="o">())</span>
+</span><span class='line'>                          <span class="o">.</span><span class="na">subscribe</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">onDestroy</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">subscription</span><span class="o">.</span><span class="na">unsubscribe</span><span class="o">();</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onNext</span><span class="o">(</span><span class="n">File</span> <span class="n">file</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Toast</span><span class="o">.</span><span class="na">makeText</span><span class="o">(</span><span class="n">getActivity</span><span class="o">(),</span>
+</span><span class='line'>        <span class="s">&quot;Downloaded: &quot;</span> <span class="o">+</span> <span class="n">file</span><span class="o">.</span><span class="na">getAbsolutePath</span><span class="o">(),</span>
+</span><span class='line'>        <span class="n">Toast</span><span class="o">.</span><span class="na">LENGTH_SHORT</span><span class="o">)</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">show</span><span class="o">();</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onCompleted</span><span class="o">()</span> <span class="o">{}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onError</span><span class="o">(</span><span class="n">Throwable</span> <span class="n">error</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Toast</span><span class="o">.</span><span class="na">makeText</span><span class="o">(</span><span class="n">getActivity</span><span class="o">(),</span>
+</span><span class='line'>        <span class="s">&quot;Download failed: &quot;</span> <span class="o">+</span> <span class="n">error</span><span class="o">.</span><span class="na">getMessage</span><span class="o">(),</span>
+</span><span class='line'>        <span class="n">Toast</span><span class="o">.</span><span class="na">LENGTH_SHORT</span><span class="o">)</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">show</span><span class="o">();</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>As you can see, with RxJava the aforementioned issues have been solved in one fell swoop.
+We can have proper error handling through an observer&#8217;s <code>onError</code> callback. We can
+execute the task on any given scheduler with a simple method call, and have fine grained
+control over where the expensive code is run and where the callbacks will run, without
+the need to write a single line of synchronization logic. RxJava also allows us to
+compose and transform observables to obtain new ones, thus enabling easy reuse of code.
+For instance, in order to not emit the <code>File</code> itself, but merely its path, we can take
+the <em>existing</em> observable and transform it:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Observable</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">filePathObservable</span> <span class="o">=</span> <span class="n">downloadFileObservable</span><span class="o">().</span><span class="na">map</span><span class="o">(</span><span class="k">new</span> <span class="n">Func1</span><span class="o">&lt;</span><span class="n">File</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">String</span> <span class="nf">call</span><span class="o">(</span><span class="n">File</span> <span class="n">file</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">file</span><span class="o">.</span><span class="na">getAbsolutePath</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// now emits file paths, not `File`s</span>
+</span><span class='line'><span class="n">subscription</span> <span class="o">=</span> <span class="n">filePathObservable</span><span class="o">.</span><span class="na">subscribe</span><span class="o">(</span><span class="cm">/* Observer&lt;String&gt; */</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>It should be easy to see how powerful this way of expressing asynchronous computations is.
+At <a href="https://soundcloud.com">SoundCloud</a> we are currently in the process of moving most of our code that relies
+heavily on event based and asynchronous operations to Rx observables. For everyone&#8217;s
+convenience, for RxJava 0.10.1 we have contributed <code>AndroidSchedulers</code> which schedule an observer to receive callbacks
+on a <code>Handler</code> thread (see <a href="https://github.com/Netflix/RxJava/tree/master/rxjava-contrib/rxjava-android">rxjava-android</a>). We also plan to open source more
+components that we currently use, but that are still being refined. For instance, we use
+a custom <code>Observer</code> which makes guarantees that callbacks to fragments only happen
+whenever the fragment is attached and the Activity is alive, thus making your own code
+more reliable.</p>
+
+<p>In a nutshell, RxJava finally makes concurrency and event based programming on Android hassle free.
+It should be noted that we follow the same strategy on iOS using GitHub&#8217;s <a href="https://github.com/ReactiveCocoa/ReactiveCocoa">Reactive Cocoa</a>
+library, since as a team we have committed ourselves to the functional reactive paradigm.
+We think it&#8217;s an exciting development that leads to more stable code that is easy to unit test,
+and free of low level state or concurrency concerns that would otherwise take over your
+service objects.</p>
+
+<p>If you&#8217;re interested to hear more about this topic, make sure to watch this <a href="http://backstage.soundcloud.com/2013/08/responsive-android-applications-with-sane-code/">interview
+with our Director of Mobile Engineering on Root Access Berlin</a>
+and come see me at <a href="http://uk.droidcon.com/2013/lineup/">DroidCon UK 2013</a>, where I will speak about RxJava and its use in
+the SoundCloud application on the developer track.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Herding HTTP Requests, Or Why Your Keep-Alive Connection May Already Be Dead]]></title>
