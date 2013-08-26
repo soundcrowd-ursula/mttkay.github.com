@@ -22,7 +22,7 @@ in order to not break with this fundamental requirement.
 Moreover, writing such programs
 is hard, since at least on mobile, they are typically written in imperative
 languages like C or Java. The reason why writing concurrent code in imperative
-languages is hard is because code is written it in terms of interweaved 
+languages is hard is because code is written in terms of interweaved
 temporal instructions that move objects
 or data structures from one state to another. This imperative style of programming 
 is inherently bound to producing side effects, and gives rises to a number of problems when running these
@@ -176,9 +176,9 @@ one fell swoop. To summarize again what these problems were:
 [RxJava](https://github.com/Netflix/RxJava) is an implementation of the Reactive Extensions (Rx)
 on the JVM, courtesy of Netflix. Rx was first conceived by Erik Meijer
 on the Microsoft .NET platform, as a way of combining data or event streams with
-reactive data structures and functional composition. In Rx, events are modeled
+reactive objects and functional composition. In Rx, events are modeled
 as observable streams, to which observers are subscribed. These streams, or observables
-for short, can be filtered, transformed and composed in various ways before its
+for short, can be filtered, transformed and composed in various ways before their
 results are emitted to an observer. Every observer is defined over three simple messages:
 `onNext`, `onCompleted`, and `onError`. Concurrency is a variable in this equation,
 and abstracted away in the form of schedulers. Generally, every observable stream
