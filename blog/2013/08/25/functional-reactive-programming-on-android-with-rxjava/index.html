@@ -17,9 +17,10 @@ can only be described as an inconvenient truth: Modern applications &hellip;">
 	<link href="/favicon.png" rel="shortcut icon">
 	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
 	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
-	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	<script async="true" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 	
 </head>
+
 
 <body>
 	<header id="header" class="inner"><h1><a href="/">mttkay here.</a></h1>
@@ -67,6 +68,7 @@ can only be described as an inconvenient truth: Modern applications &hellip;">
 		
 		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
 		
+    
 	</div>
 	<form class="search" action="http://google.com/search" method="get">
 		<input class="alignright" type="text" name="q" results="0">
@@ -111,7 +113,7 @@ in order to not break with this fundamental requirement.
 Moreover, writing such programs
 is hard, since at least on mobile, they are typically written in imperative
 languages like C or Java. The reason why writing concurrent code in imperative
-languages is hard is because code is written it in terms of interweaved
+languages is hard is because code is written in terms of interweaved
 temporal instructions that move objects
 or data structures from one state to another. This imperative style of programming
 is inherently bound to producing side effects, and gives rises to a number of problems when running these
@@ -289,9 +291,9 @@ one fell swoop. To summarize again what these problems were:</p>
 <p><a href="https://github.com/Netflix/RxJava">RxJava</a> is an implementation of the Reactive Extensions (Rx)
 on the JVM, courtesy of Netflix. Rx was first conceived by Erik Meijer
 on the Microsoft .NET platform, as a way of combining data or event streams with
-reactive data structures and functional composition. In Rx, events are modeled
+reactive objects and functional composition. In Rx, events are modeled
 as observable streams, to which observers are subscribed. These streams, or observables
-for short, can be filtered, transformed and composed in various ways before its
+for short, can be filtered, transformed and composed in various ways before their
 results are emitted to an observer. Every observer is defined over three simple messages:
 <code>onNext</code>, <code>onCompleted</code>, and <code>onError</code>. Concurrency is a variable in this equation,
 and abstracted away in the form of schedulers. Generally, every observable stream
@@ -533,20 +535,21 @@ the SoundCloud application on the developer track.</p>
 
 </div>
 	
-</div></article>
+</div>
+</article>
 
 	<div class="share">
 	<div class="addthis_toolbox addthis_default_style ">
-	
-	
-	<a class="addthis_button_tweet"></a>
-	
-	
-	<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
-	
-	<a class="addthis_counter addthis_pill_style"></a>
+		
+		
+		<a class="addthis_button_tweet"></a>
+		
+		
+		<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+		
+		
 	</div>
-  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+	
 </div>
 
 
