@@ -75,83 +75,83 @@ class DownloadTask extends AsyncTask<String, Void, File> {
 }
 {% endcodeblock %}
 
-This looks straight forward. We define a method `doInBackground` which accepts
+This looks straightforward. Define a method `doInBackground` that accepts
 something through its formal parameters, and returns something as the result
-of the operation. Android guarantees us that this code will execute in a thread
-that's not the main user interface thread. We also define a UI callback called
-`onPostExecute`, which receives the result of the computation and can consume
+of the operation. Android guarantees that this code will execute in a thread
+that is not the main user-interface thread. We also define a UI callback function
+`onPostExecute` that receives the result of the computation and can consume
 it on the main UI thread, since Android guarantees that this method will always
-be invoked on the main thread. So far so good. What's wrong with this picture?
+be invoked on the main thread.
 
-### In search for those jigsaw pieces
+### In search for the jigsaw-puzzle pieces
 
-Quite a few things as it turns out. Let's start with `doInBackground`. As you
-can see we download a file here, a costly operation since it involves network and disk I/O.
-There's about a hundred things that can go wrong here, so we surely want to
-recover from errors, and add a try-catch block. Just what do we do in the catch
-block? Log the error? That's good and fine, but perhaps we may want to inform
-the user about this error too, which likely involves interacting with the UI, but
-wait, we can't do that sine we're not allowed to update user interface elements
+So far so good. What's wrong with this picture?
+Let's start with `doInBackground`, which 
+downloads a file--a costly operation because it involves network and disk I/O.
+There are many things that can go wrong, so we want to
+recover from errors, and add a try-catch block. What do we do in the catch
+block? Log the error? Perhaps we want to inform
+the user about this error too, which likely involves interacting with the UI. 
+Wait, we cannot do that because we are not allowed to update any user-interface elements
 from a background thread. Bummer.
 
-Surely it should be easy to handle that error in `onPostExecute` then.
-We might reason that it's as simple as holding on to the exception in a private
+It should be easy to handle that error in `onPostExecute`.
+We might reason that it is as simple as holding on to the exception in a private
 field (i.e. we write it on the background thread), and check in `onPostExecute` 
 (i.e. read it on the UI thread) if that field is set to something other than
 null (did I mention we love null checks) and display it to the user in some way
-shape or form. (The observant reader at this point notes that text in parens
-equals: subtle problems ahead.) But wait, how do we obtain a reference to a
-`Context`, without which we cannot do anything meaningful with the UI? Apparently
+shape or form. But wait, how do we obtain a reference to a
+`Context`, without which we cannot do anything meaningful with the UI? Apparently, 
 we have to bind it to the task instance up front, at the point of instantiation,
-and keep a reference to it throughout the task execution. But what if the download
-takes a minute to run? Do we want to hold on to e.g. an `Activity` instance
-for an entire minute? What if the user decides to back out of the Activity which
-triggered the task, and we're now holding on to a stale reference, which not only
-creates a substantial memory leak, but also isn't worth a dime, since it
-has meanwhile been detached from the application window? A problem that, as [a 
-simple Google search suggests](https://www.google.de/search?q=asynctask+configuration+change), everyone is well aware of.
+and keep a reference to it throughout a task's execution. But what if the download
+takes a minute to run? Do we want to hold on to an `Activity` instance
+for an entire minute? What if the user decides to back out of the Activity that
+triggered the task, and we are holding on to a stale reference. This not only
+creates a substantial memory leak, but is also worthless because meanwhile it
+has been detached from the application window. A problem that 
+[everyone is well aware of](https://www.google.de/search?q=asynctask+configuration+change).
 
 ### Beyond the basics
 
-Without wanting to beat horses that are already dead, there are other problems
-with all this. The task above is incredibly simple. Picture more complicated
-scenarios where we need to orchestrate a number of such operations. We might
-for instance want to fetch some JSON from a service API, parse it, map it,
+There are other problems
+with all this. The preceding task is incredibly simple. Picture a more complicated
+scenario where we need to orchestrate a number of such operations. For example, we might 
+want to fetch some JSON from a service API, parse it, map it,
 filter it, cache it to disk, and only then feed the result to the UI. All
-the operations just mentioned should--as per the single responsibility principle--exist
-as separate objects, perhaps exposed through different services. Composing
-these using `AsyncTask` is difficult and non-intuitive, since it requires
+the aforementioned operations should--as per the single responsibility principle--exist
+as separate objects, perhaps exposed through different services. It is difficult and 
+non-intuitive to use `AsyncTask` because it requires
 grouping any number of combinations of service interactions into separate task
-classes, resulting in a proliferation of--from the perspective of your business
-logic--meaningless task classes.
+classes. This results in a proliferation of meaningless task classes, 
+from the perspective of your business logic.
 
-Another option would be to have one task class per service object invocation, or
-have the service objects themselves wrap their code in `AsyncTasks`. This then
-means that composing service objects means nesting `AsyncTask`, leading to what's
-commonly called the "callback hell", since you start tasks from a task callback
-from a task callback from... you get the idea.
+Another option is to have one task class per service-object invocation, or
+wrap the service objects themselves in `AsyncTasks`. 
+Composing service objects means nesting `AsyncTask`, which leads to what is 
+commonly referred to as "callback hell" because you start tasks from a task callback
+from a task callback from a ... you get the idea.
 
-Last, but not least, `AsyncTask`s scheduling behavior varies significantly across
-different versions of Android. I believe I have seen it changing from a capped
-thread pool back in the 1.x days (with varying bounds depending again on the API level) 
-to a _single thread executor_ model in 4.x. Read that again: your tasks (plural) 
+Last but not least, `AsyncTask`s scheduling behavior varies significantly across
+different versions of Android. It's changed from a capped thread pool 
+in the 1.x days (with varying bounds depending on the API level) 
+to a _single thread executor_ model in 4.x. Read that again. Your tasks (plural) 
 do _not_ run concurrently to each other on ICS devices and beyond (although they do run
-concurrently to the main UI thread). Why did GOOG decide to serialize task execution?
-For the same reason I'm writing this post. Developers simply couldn't get it right,
+concurrently to the main UI thread). Why did Google decide to serialize task execution?
+Developers could not get it right,
 applications suffered from nasty problems due to race conditions and incorrectly
 synchronized code.
 
 ### The inconvenient truth
 
-So, should we still use `Thread` and `AsyncTask`?
+Should we still use `Thread` and `AsyncTask`?
 
-The answer is: probably. For very simple, one-shot jobs that do not require
-much orchestration, `AsyncTask` is fine. For anything beyond that:
-it's doable, but it requires juggling with `volatile`s, `WeakReference`s,
-`null` checks, and other [defensive, unconfident mechanisms](http://devblog.avdi.org/2012/06/05/confident-ruby-beta/), 
-but perhaps worst of all, it requires us to
-think about things that have nothing to do with the problem we set out to solve: 
-downloading a file.
+The answer is "probably". For simple, one-shot jobs that do not require
+much orchestration, `AsyncTask` is fine. For anything more complex 
+it is doable, but requires juggling with `volatile`s, `WeakReference`s,
+`null` checks, and other [defensive, unconfident mechanisms](http://devblog.avdi.org/2012/06/05/confident-ruby-beta/). 
+Perhaps worst of all, it requires you to
+think about things that have nothing to do with the problem that you set out to solve, which is  
+to download a file.
 
 # Enter RxJava--now with more Android
 
