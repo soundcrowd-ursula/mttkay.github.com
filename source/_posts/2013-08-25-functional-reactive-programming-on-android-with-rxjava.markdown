@@ -8,52 +8,48 @@ categories:
 - rxjava 
 ---
 
-If you're an app developer, there are two facts about your daily life that
-can only be described as an inconvenient truth:
+If you are an application developer, there are two inconvenient truths:
 
 1. Modern applications are inherently concurrent.
-1. Writing concurrent programs (that are correct) is hard.
+1. Writing concurrent programs that are correct is difficult.
 
-There are good reasons for both of these points. In the domain of mobile or desktop applications,
-parallel execution allows for responsive user interfaces, since we can move
-computations into the background while leaving the UI responding to ongoing
-user interaction. We have to deal with the fact that code must execute concurrently
-in order to not break with this fundamental requirement. 
-Moreover, writing such programs
-is hard, since at least on mobile, they are typically written in imperative
-languages like C or Java. The reason why writing concurrent code in imperative
-languages is hard is because code is written in terms of interweaved
+In the domain of mobile or desktop applications,
+parallel execution allows for responsive user interfaces because we can move
+computations into the background while the UI responds to ongoing
+user interactions. Code must execute concurrently
+to not stray from this fundamental requirement. 
+Writing such programs
+is diffcult because on mobile they are typically written in imperative
+languages like C or Java. Writing concurrent code in imperative
+languages is difficult because code is written in terms of interweaved,
 temporal instructions that move objects
 or data structures from one state to another. This imperative style of programming 
-is inherently bound to producing side effects, and gives rises to a number of problems when running these
+inherently produces side effects. It presents several problems when running 
 instructions in parallel, such as race conditions when writing to a shared resource.
 
 # Resistance is futile--or is it?
 
-It's almost awkward how accustomed developers have grown to the drawbacks of
-expressing concurrency using imperative languages. I have myself taken it for a
-fact, an inconvenient truth: on platforms like Android where Java is (still) the
+Developers have grown accustomed to the drawbacks of
+expressing concurrency in imperative languages.
+On platforms like Android where Java is (still) the
 dominant language, concurrency simply sucks, and we should just give in and deal with it.
-I personally keep a close eye on what's happening on the other end of the spectrum
-though, i.e. the server side, and it so happens that over the past few years,
-functional programming has made an astounding comeback. I mean astounding as in 
-incredible in terms of rate of adoption and innovation. This has many reasons which
-I won't get into here, but in the case of concurrency, functional programming has
+I personally keep a close eye on the server side end of the spectrum. 
+Over the past few years,
+functional programming has made an astounding comeback 
+in terms of rate of adoption and innovation, the details of which 
+I will not get into here. In the case of concurrency, functional programming has
 a very simple answer to dealing with shared state: don't have it.
-
-Let's have a quick look at the status quo of concurrency in Android, and what
-the problems are.
 
 ## Problems of concurrent programming with AsyncTask
 
-Being based on Java, Android comes with your standard share of Java concurrency
-primitives, such as `Thread`s and `Future`s. Needless to say, these tools, while making
-it easy to perform simple asynchronous tasks, are fairly low level and require
-a substantial amount of diligence when used to model complex
-interactions between concurrent objects. One very frequent use case on Android
-(and any UI driven application for that matter) is to perform a background job
-and then update the UI with the result of the operation. Android gives us `AsyncTask`
-for exactly that, and it's used somewhat like this:
+Being based on Java, Android comes with a standard number of Java concurrency
+primitives such as `Thread`s and `Future`s. While these tools make 
+it easy to perform simple asynchronous tasks, they are fairly low level and require
+a substantial amount of diligence when you use them to model complex
+interactions between concurrent objects. A frequent use case on Android
+or any UI-driven application is to perform a background job
+and then update the UI with the result of the operation. Android provides `AsyncTask`
+for exactly that:
 
 {% codeblock lang:java %}
 class DownloadTask extends AsyncTask<String, Void, File> {
