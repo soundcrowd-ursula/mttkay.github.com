@@ -155,33 +155,33 @@ to download a file.
 
 # Enter RxJava--now with more Android
 
-To come back to the initial problem statement: do we have to give in to the lack
-of high level abstractions and deal with it, or are there better solutions? Turns
-out that as initially hinted at, functional programming might have an answer to
-this. "But wait" you might say, "I still want to use Java?". Turns out: yes we can.
-It's not super pretty (at least not unless Google whip out their magic wand and
-give us Java 8 and closures on Dalvik, or unless you feel attracted to anonymous classes and
-six levels of identation), but it happens to solve all of the above problems in
-one fell swoop. To summarize again what these problems were:
+To come back to the initial problem statement, do we have to give in to the lack
+of high-level abstractions and deal with it, or do better solutions exist? Turns
+out that functional programming might have an answer to
+this. "But wait" you might say, "I still wanna use Java?". Turns out, yes, you can.
+It is not super pretty (at least not unless Google whips out its magic wand and
+gives us Java 8 and closures on Dalvik, or unless you feel attracted to anonymous classes and
+six levels of identation). However, it solves all of the problems in
+one fell swoop:
 
 - No standard mechanism to recover from errors
 - Lack of control over thread scheduling (unless you like to dig deep)
 - No obvious way to compose asynchronous operations
-- No obvious and hassle free way of attaching to `Context`
+- No obvious and hassle-free way of attaching to `Context`
 
 [RxJava](https://github.com/Netflix/RxJava) is an implementation of the Reactive Extensions (Rx)
 on the JVM, courtesy of Netflix. Rx was first conceived by Erik Meijer
 on the Microsoft .NET platform, as a way of combining data or event streams with
 reactive objects and functional composition. In Rx, events are modeled
-as observable streams, to which observers are subscribed. These streams, or observables
-for short, can be filtered, transformed and composed in various ways before their
-results are emitted to an observer. Every observer is defined over three simple messages:
+as observable streams to which observers are subscribed. These streams, or observables
+for short, can be filtered, transformed, and composed in various ways before their
+results are emitted to an observer. Every observer is defined within three messages:
 `onNext`, `onCompleted`, and `onError`. Concurrency is a variable in this equation,
 and abstracted away in the form of schedulers. Generally, every observable stream
-exposes an interface that is modeled around concurrent execution flows (i.e. you don't
+exposes an interface that is modeled after concurrent execution flows (i.e. you don't
 call it, you subscribe to it), but by default is executed synchronously. Introducing
-schedulers can then make an observable execute using various concurrency primitives
-such as threads, thread pools, or even Scala actors. Here's an example:
+schedulers can make an observable execute using various concurrency primitives
+such as threads, thread pools, or even Scala actors. Here is an example:
 
 {% codeblock lang:java %}
 Subscription sub = Observable.from(1, 2, 3, 4, 5)
@@ -194,13 +194,11 @@ Subscription sub = Observable.from(1, 2, 3, 4, 5)
 sub.unsubscribe();
 {% endcodeblock %}
 
-This creates a new observable stream from the given list of integers, and emits
+This creates a new, observable stream from the given list of integers, and emits
 them one after another on the given observer. The use of `subscribeOn` and `observeOn`
-configures the stream to emit the numbers on a new `Thread`, and receive them on
-the Android main UI thread (i.e. the observer's `onNext` method is called on the main thread.)
-Eventually, we also unsubscribe from the observable.
-
-Here's a possible `Observer` implementation:
+configures the stream to emit the numbers on a new `Thread`, and to receive them on
+the Android main UI thread. For example, the observer's `onNext` method is called on the main thread.
+Eventually, you unsubscribe from the observable. Here is an example `Observer` implementation:
 
 {% codeblock lang:java %}
 public class IntObserver implements Observer<Integer> {
@@ -214,8 +212,7 @@ public class IntObserver implements Observer<Integer> {
 }
 {% endcodeblock %}
 
-Now this is not a very interesting example. Let's have a look at how we might implement
-the download task as an Rx `Observable`.
+For something more interesting, you can implement the download task as an Rx `Observable`:
 
 {% codeblock lang:java %}
 private Observable<File> downloadFileObservable() {
