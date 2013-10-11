@@ -8,6 +8,8 @@ categories:
 - rxjava 
 ---
 
+Shameless plug: if after reading this article, you want to know more, come hear me talk at [DroidCon UK 2013](http://uk.droidcon.com/2013/lineup/)!
+
 If you are an application developer, there are two inconvenient truths:
 
 1. Modern applications are inherently concurrent.
@@ -233,13 +235,12 @@ private Observable<File> downloadFileObservable() {
 }
 {% endcodeblock %}
 
-What we do here is create a method which builds an `Observable` "stream" (in our case emitting
-only ever a single item, the file), to which a `File` observer can connect. Whenever
-this observable is subscribed to, its `call` function will trigger and execute the task at hand.
-If the task can be carried out successfully, we deliver the result to the observer through `onNext`,
-so it can properly react to it. We then signal completion through `onCompleted`. If an exception
-is raised, we deliver it to the observer through `onError`. Here is how you use this
-from, say, a `Fragment`:
+The preceding example creates a method that builds an `Observable` *stream*, which in this case 
+only ever emits a single item (the file) to which a `File` observer can connect. Whenever
+this observable is subscribed to, its `call` function triggers and executes the task at hand.
+If the task can be carried out successfully, deliver the result to the observer through `onNext` 
+so `onNext` can properly react to it. Then signal completion by using `onCompleted`. If an exception
+is raised, deliver it to the observer through `onError`. As an example, you can use this from a `Fragment`:
 
 {% codeblock lang:java %}
 class MyFragment extends Fragment implements Observer<File> {
@@ -274,14 +275,13 @@ class MyFragment extends Fragment implements Observer<File> {
 }
 {% endcodeblock %}
 
-As you can see, with RxJava the aforementioned issues have been solved in one fell swoop.
-We can have proper error handling through an observer's `onError` callback. We can
-execute the task on any given scheduler with a simple method call, and have fine grained
-control over where the expensive code is run and where the callbacks will run, without
-the need to write a single line of synchronization logic. RxJava also allows us to
-compose and transform observables to obtain new ones, thus enabling easy reuse of code.
-For instance, in order to not emit the `File` itself, but merely its path, we can take
-the _existing_ observable and transform it:
+By using RxJava, the aforementioned issues are solved all at the same time.
+You can have proper error handling through an observer's `onError` callback. Also, you can
+execute the task on any given scheduler with a simple method call. Doing so gives you fine-grained
+control over where the expensive code is run and where the callbacks will run, all without
+you having to write a single line of synchronization logic. Futhermore, RxJava allows you to
+compose and transform observables to obtain new ones, which enables you to reuse code easily. 
+For example, to not emit the `File` itself, but merely its path, transform the _existing_ observable:
 
 {% codeblock lang:java %}
 Observable<String> filePathObservable = downloadFileObservable().map(new Func1<File, String>() {
@@ -295,24 +295,21 @@ Observable<String> filePathObservable = downloadFileObservable().map(new Func1<F
 subscription = filePathObservable.subscribe(/* Observer<String> */);
 {% endcodeblock %}
 
-It should be easy to see how powerful this way of expressing asynchronous computations is.
-At [SoundCloud](https://soundcloud.com) we are currently in the process of moving most of our code that relies
-heavily on event based and asynchronous operations to Rx observables. For everyone's
-convenience, for RxJava 0.10.1 we have contributed `AndroidSchedulers` which schedule an observer to receive callbacks
-on a `Handler` thread (see [rxjava-android](https://github.com/Netflix/RxJava/tree/master/rxjava-contrib/rxjava-android)). We also plan to open source more
-components that we currently use, but that are still being refined. For instance, we use
-a custom `Observer` which makes guarantees that callbacks to fragments only happen
-whenever the fragment is attached and the Activity is alive, thus making your own code
+You can see how powerful this way of expressing asynchronous computations is.
+At [SoundCloud](https://soundcloud.com), we are moving most of our code that relies
+heavily on event-based and asynchronous operations to Rx observables. For 
+convenience if using RxJava 0.10.1, we contributed `AndroidSchedulers` that schedule an observer to receive callbacks
+on a `Handler` thread. See [rxjava-android](https://github.com/Netflix/RxJava/tree/master/rxjava-contrib/rxjava-android). We also plan to open-source more components after we refine them. For example, we use
+a custom `Observer` that guarantees that callbacks to fragments only happen
+when the fragment is attached and the Activity is alive, thus making your own code
 more reliable.
 
-In a nutshell, RxJava finally makes concurrency and event based programming on Android hassle free.
-It should be noted that we follow the same strategy on iOS using GitHub's [Reactive Cocoa](https://github.com/ReactiveCocoa/ReactiveCocoa)
-library, since as a team we have committed ourselves to the functional reactive paradigm.
-We think it's an exciting development that leads to more stable code that is easy to unit test,
-and free of low level state or concurrency concerns that would otherwise take over your
+In a nutshell, RxJava finally makes concurrency and event-based programming on Android hassle free.
+Note that we follow the same strategy on iOS using GitHub's [Reactive Cocoa](https://github.com/ReactiveCocoa/ReactiveCocoa)
+library because we have committed ourselves to the functional-reactive paradigm.
+We think that it is an exciting development that leads to code that is more stable, easier to unit test,
+and free of low-level state or concurrency concerns that would otherwise take over your
 service objects.
 
-If you're interested to hear more about this topic, make sure to watch this [interview
-with our Director of Mobile Engineering on Root Access Berlin](http://backstage.soundcloud.com/2013/08/responsive-android-applications-with-sane-code/)
-and come see me at [DroidCon UK 2013](http://uk.droidcon.com/2013/lineup/), where I will speak about RxJava and its use in
-the SoundCloud application on the developer track.
+To hear more about this topic, watch this [interview with our Director of Mobile Engineering on Root Access Berlin](http://backstage.soundcloud.com/2013/08/responsive-android-applications-with-sane-code/)
+and come see me at [DroidCon UK 2013](http://uk.droidcon.com/2013/lineup/) where I will be speaking about RxJava and its use in the SoundCloud application on the developer track.
